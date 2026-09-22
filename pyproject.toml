@@ -1,0 +1,9 @@
+[project]
+name = "concevez-et-deployez-un-systeme-rag"
+version = "0.1.0"
+description = "POC permettant de tester un nouveau chatbot intelligent capable de répondre à des questions utilisateurs sur les événements culturels à venir, en s'appuyant sur un système RAG (Retrieval-Augmented Generation) combinant recherche vectorielle et génération de réponse en langage naturel."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "python-dotenv>=1.2.3",
+]
