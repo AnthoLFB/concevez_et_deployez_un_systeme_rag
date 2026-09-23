@@ -9,7 +9,13 @@ dependencies = [
     "langchain>=1.4.2",
     "langchain-community>=0.4.2",
     "mistralai>=2.10.1",
+    "pandas>=3.0.6",
     "pytest>=9.1.1",
     "python-dotenv>=1.2.3",
+    "requests>=2.34.2",
     "sentence-transformers>=6.1.0",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
