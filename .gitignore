@@ -1,3 +1,4 @@
 configuration/.env
 .idea/
 .venv/
+.env
