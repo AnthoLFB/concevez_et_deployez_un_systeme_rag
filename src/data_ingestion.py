@@ -15,8 +15,10 @@ def fetch_openagenda_events():
     city = os.getenv("CITY", "Lille")
     history_years = int(os.getenv("HISTORY_YEARS", 1))
     
-    # Date actuelle (2026-09-23 selon l'énoncé)
+    # Date actuelle (2026-09-24)
     current_date = datetime.now().date()
+    # On peut aussi fixer la date si nécessaire pour le POC comme demandé (2026)
+    # current_date = datetime(2026, 9, 24).date()
     start_date = current_date - timedelta(days=history_years * 365)
     
     # Format ISO pour l'API

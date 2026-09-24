@@ -6,7 +6,8 @@ Ce projet est un POC (Proof of Concept) d'un chatbot intelligent capable de rép
 
 - **Recherche Vectorielle** : Utilise **FAISS** et les embeddings officiels de **Mistral AI** pour trouver les informations pertinentes par similarité sémantique.
 - **Génération de Réponses** : Intégration avec Mistral AI pour générer des réponses naturelles basées sur le contexte récupéré.
-- **Framework** : Développé avec **LangChain** pour orchestrer le pipeline RAG (Chunking, Vectorisation, Indexation).
+- **Chatbot Interactif** : Interface en ligne de commande pour poser des questions en langage naturel sur les événements.
+- **Framework** : Développé avec **LangChain** pour orchestrer le pipeline RAG (Chunking, Vectorisation, Indexation, Retrieval).
 
 ## Prérequis
 
@@ -56,12 +57,12 @@ CHUNK_OVERLAP=100
 
 ## Utilisation
 
-### Lancer le pipeline complet
-Pour récupérer les données, les découper, les vectoriser et créer l'index FAISS :
+### Lancer le chatbot (Pipeline & Interface)
+Pour lancer le chatbot (indexation automatique au premier lancement, puis mode interactif) :
 ```bash
 uv run python main.py
 ```
-L'index sera sauvegardé dans `data/faiss_index/`.
+L'index sera sauvegardé dans `data/faiss_index/`. Si l'index existe déjà, le programme passera directement au mode discussion.
 
 ### Tester la recherche sémantique
 Pour vérifier l'efficacité de l'indexation avec des requêtes de test :
@@ -70,19 +71,20 @@ uv run python verify_search.py
 ```
 
 ### Exécuter les tests
-Pour valider la logique de traitement et de découpage :
+Pour valider la logique de traitement, du chatbot et du découpage :
 ```bash
 uv run pytest
 ```
 
 ## Structure du Projet
 
-- `main.py` : Point d'entrée pour la création du pipeline RAG.
+- `main.py` : Point d'entrée principal (Indexation + Chatbot).
 - `verify_search.py` : Script utilitaire pour tester la recherche dans l'index.
 - `src/` :
     - `data_ingestion.py` : Récupération et nettoyage des données OpenAgenda.
     - `vector_store.py` : Gestion du chunking, de la vectorisation Mistral et de l'index FAISS.
+    - `chatbot.py` : Logique de la chaîne RAG et interaction avec Mistral AI via LangChain.
     - `data_processing.py` : Fonctions utilitaires pour les embeddings (legacy).
 - `data/` : Dossier contenant l'index FAISS et le cache des événements (géré automatiquement).
-- `tests/` : Tests unitaires (validation du chunking, etc.).
+- `tests/` : Tests unitaires (validation du chunking, du chatbot, etc.).
 - `pyproject.toml` : Configuration et dépendances.
