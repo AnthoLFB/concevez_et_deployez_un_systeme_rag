@@ -4,22 +4,23 @@ Ce projet est un POC (Proof of Concept) d'un chatbot intelligent capable de rép
 
 ## Fonctionnalités
 
-- **Recherche Vectorielle** : Utilise FAISS et des embeddings de Sentence-Transformers pour trouver les informations pertinentes.
+- **Recherche Vectorielle** : Utilise **FAISS** et les embeddings officiels de **Mistral AI** pour trouver les informations pertinentes par similarité sémantique.
 - **Génération de Réponses** : Intégration avec Mistral AI pour générer des réponses naturelles basées sur le contexte récupéré.
-- **Framework** : Développé avec LangChain pour orchestrer la chaîne RAG.
+- **Framework** : Développé avec **LangChain** pour orchestrer le pipeline RAG (Chunking, Vectorisation, Indexation).
 
 ## Prérequis
 
 - Python >= 3.14
 - [uv](https://github.com/astral-sh/uv) installé sur votre machine.
+- Une clé API Mistral AI valide.
 
 ## Fonctionnement du système
 
 Le projet suit un pipeline de données en plusieurs étapes :
 1. **Ingestion** : Les événements culturels sont récupérés depuis l'API OpenDataSoft filtrés par ville et par date.
-2. **Traitement & Nettoyage** : Les données sont structurées dans un DataFrame Pandas, les balises HTML sont supprimées et les descriptions sont normalisées.
-3. **Vectorisation** : Le texte combiné (titre + descriptions) est transformé en vecteurs (embeddings) via l'API Mistral (`mistral-embed`).
-4. **Stockage** : Le DataFrame résultant, incluant les vecteurs, est sauvegardé au format Pickle pour une utilisation ultérieure par le moteur de recherche FAISS.
+2. **Traitement & Nettoyage** : Les données sont structurées dans un DataFrame Pandas et les descriptions sont nettoyées (suppression du HTML).
+3. **Découpage (Chunking)** : Les descriptions longues sont découpées en morceaux plus petits (chunks) avec recouvrement pour conserver le contexte.
+4. **Vectorisation & Indexation** : Chaque morceau de texte est transformé en vecteurs via l'API Mistral (`mistral-embed`) et stocké dans un index local **FAISS**.
 
 ## Installation
 
@@ -39,39 +40,49 @@ Le projet suit un pipeline de données en plusieurs étapes :
 Le projet utilise `python-dotenv` pour gérer les variables d'environnement. Créez un fichier `.env` à la racine du projet (en vous basant sur `.env.example`) et configurez les variables suivantes :
 
 ```env
-# Clé API pour la génération de réponses et d'embeddings
+# Clé API Mistral
 MISTRAL_API_KEY=votre_cle_api_ici
+MISTRAL_MODEL=mistral-tiny
 
-# URL de l'API OpenDataSoft OpenAgenda
-OPENDATA_API_URL=https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/records
-
-# Paramètres de filtrage des événements
+# Paramètres de filtrage
 CITY=Lille
 HISTORY_YEARS=1
+
+# Paramètres Vector Database
+FAISS_INDEX_PATH=data/faiss_index
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=100
 ```
 
 ## Utilisation
 
-### Lancer l'ingestion et le traitement
-Pour récupérer les données depuis OpenAgenda, les nettoyer et générer les embeddings Mistral :
+### Lancer le pipeline complet
+Pour récupérer les données, les découper, les vectoriser et créer l'index FAISS :
 ```bash
 uv run python main.py
 ```
-Les données traitées seront sauvegardées dans le dossier `data/processed_events.pkl`.
+L'index sera sauvegardé dans `data/faiss_index/`.
+
+### Tester la recherche sémantique
+Pour vérifier l'efficacité de l'indexation avec des requêtes de test :
+```bash
+uv run python verify_search.py
+```
 
 ### Exécuter les tests
-Pour vérifier l'installation et les fonctionnalités :
+Pour valider la logique de traitement et de découpage :
 ```bash
 uv run pytest
 ```
 
 ## Structure du Projet
 
-- `main.py` : Point d'entrée pour la chaîne d'ingestion et de traitement.
+- `main.py` : Point d'entrée pour la création du pipeline RAG.
+- `verify_search.py` : Script utilitaire pour tester la recherche dans l'index.
 - `src/` :
-    - `data_ingestion.py` : Récupération des données via l'API OpenDataSoft et premier nettoyage.
-    - `data_processing.py` : Génération des embeddings en utilisant l'API Mistral AI.
-- `data/` : Dossier contenant les données traitées (généré après exécution).
-- `tests/` : Tests unitaires pour valider les composants.
-- `pyproject.toml` : Configuration du projet et dépendances (géré par `uv`).
-- `.env.example` : Modèle pour les variables d'environnement.
+    - `data_ingestion.py` : Récupération et nettoyage des données OpenAgenda.
+    - `vector_store.py` : Gestion du chunking, de la vectorisation Mistral et de l'index FAISS.
+    - `data_processing.py` : Fonctions utilitaires pour les embeddings (legacy).
+- `data/` : Dossier contenant l'index FAISS et le cache des événements (géré automatiquement).
+- `tests/` : Tests unitaires (validation du chunking, etc.).
+- `pyproject.toml` : Configuration et dépendances.
