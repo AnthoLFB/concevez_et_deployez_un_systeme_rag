@@ -1,13 +1,13 @@
 import os
 import pandas as pd
 from src.data_ingestion import fetch_openagenda_events, process_events
-from src.data_processing import add_embeddings_to_df
+from src.vector_store import create_chunks, build_vector_store, save_vector_store
 
 def main():
-    print("Démarrage du pré-processing des données RAG...")
+    print("Démarrage du pipeline RAG (Ingestion -> Indexation FAISS)...")
     
-    # Récupération des données
-    print("Récupération des événements depuis OpenAgenda...")
+    # Ingestion des données
+    print("Récupération des événements depuis OpenAgenda pour Lille en 2026...")
     events = fetch_openagenda_events()
     print(f"{len(events)} événements récupérés.")
     
@@ -15,25 +15,29 @@ def main():
         print("Aucun événement trouvé. Fin du programme.")
         return
 
-    # Structuration et nettoyage
+    # Nettoyage et structuration
     print("Nettoyage et structuration des données...")
     df = process_events(events)
     
-    # Vectorisation (Embeddings Mistral)
-    print("Génération des vecteurs avec Mistral (ceci peut prendre quelques instants)...")
-    # Pour le POC, on peut limiter le nombre d'événements à vectoriser si besoin
-    # Ici on traite tout ce qui a été récupéré (limité à 100 dans ingestion)
-    df = add_embeddings_to_df(df)
+    # Découpage en chunks
+    print("Découpage des descriptions en chunks...")
+    documents = create_chunks(df)
+    print(f"{len(documents)} chunks créés.")
     
-    # Sauvegarde des résultats
+    # Vectorisation et Indexation FAISS
+    print("Vectorisation et création de l'index FAISS (via Mistral Embeddings)...")
+    vector_store = build_vector_store(documents)
+    
+    # Sauvegarde de l'index
+    save_vector_store(vector_store)
+    
+    # Sauvegarde également du DataFrame traité pour référence
     output_dir = "data"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-        
-    output_file = os.path.join(output_dir, "processed_events.pkl")
-    df.to_pickle(output_file)
-    print(f"Pré-processing terminé. Données sauvegardées dans {output_file}")
-    print(df[['title_fr', 'location_name']].head())
+    df.to_pickle(os.path.join(output_dir, "processed_events.pkl"))
+    
+    print("Pipeline terminé avec succès.")
 
 if __name__ == "__main__":
     main()
