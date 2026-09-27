@@ -1,12 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict
 import os
 import logging
 from contextlib import asynccontextmanager
 from src.chatbot import get_chatbot_chain, ask_chatbot
 from src.vector_store import build_vector_store, create_chunks, save_vector_store
 from src.data_ingestion import fetch_openagenda_events, process_events
+from src.evaluation import run_rag_evaluation
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +22,17 @@ class QuestionRequest(BaseModel):
 class AnswerResponse(BaseModel):
     question: str
     answer: str
+
+class EvalItem(BaseModel):
+    question: str
+    ground_truth: str
+
+class EvalRequest(BaseModel):
+    test_data: Optional[List[EvalItem]] = None
+
+class EvalResponse(BaseModel):
+    scores: Dict[str, float]
+    details: List[Dict]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -110,6 +122,34 @@ async def rebuild():
         return {"status": "success", "message": f"Base reconstruite avec {len(df)} événements."}
     except Exception as e:
         logger.error(f"Erreur lors de la reconstruction : {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/evaluate", response_model=EvalResponse)
+async def evaluate_rag_api(request: Optional[EvalRequest] = None):
+    """
+    Évalue le système RAG à l'aide de Ragas.
+    """
+    global rag_chain
+    if rag_chain is None:
+        raise HTTPException(
+            status_code=503, 
+            detail="Le système RAG n'est pas initialisé. Veuillez lancer /rebuild."
+        )
+    
+    try:
+        test_data = None
+        if request and request.test_data:
+            test_data = [item.model_dump() for item in request.test_data]
+            
+        result = run_rag_evaluation(rag_chain, test_data)
+        
+        # Préparation de la réponse
+        scores = {metric: score for metric, score in result.items()}
+        details = result.to_pandas().to_dict(orient="records")
+        
+        return EvalResponse(scores=scores, details=details)
+    except Exception as e:
+        logger.error(f"Erreur lors de l'évaluation : {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
