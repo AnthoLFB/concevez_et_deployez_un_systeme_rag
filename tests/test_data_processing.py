@@ -1,35 +1,49 @@
-import os
 import pytest
 import pandas as pd
-from src.data_ingestion import fetch_openagenda_events, process_events
+from unittest.mock import MagicMock, patch
+from src.data_processing import generate_embeddings, add_embeddings_to_df
 
-def test_fetch_openagenda_events():
-    """Vérifie qu'on récupère bien des événements."""
-    events = fetch_openagenda_events()
-    assert isinstance(events, list)
-    # On devrait au moins avoir quelques événements pour Lille en 2026/2025
-    assert len(events) > 0
-
-def test_process_events():
-    """Vérifie la structuration des données avec Pandas."""
-    sample_events = [
-        {
-            'uid': '1',
-            'title_fr': 'Test Event',
-            'description_fr': 'Desc',
-            'longdescription_fr': '<p>Long Desc</p>',
-            'location_name': 'Lille',
-            'location_address': 'Place Rihour, 59000 Lille',
-            'firstdate_begin': '2026-10-01T10:00:00Z',
-            'lastdate_end': '2026-10-01T18:00:00Z'
-        }
+@patch('src.data_processing.Mistral')
+def test_generate_embeddings(mock_mistral):
+    """Teste la génération d'embeddings avec un mock de l'API Mistral."""
+    mock_client = MagicMock()
+    mock_mistral.return_value = mock_client
+    
+    mock_response = MagicMock()
+    mock_response.data = [
+        MagicMock(embedding=[0.1, 0.2, 0.3]),
+        MagicMock(embedding=[0.4, 0.5, 0.6])
     ]
-    df = process_events(sample_events)
-    assert not df.empty
-    assert 'full_description' in df.columns
-    assert 'Long Desc' in df.iloc[0]['full_description']
-    assert '<p>' not in df.iloc[0]['full_description']
-    assert 'Test Event' in df.iloc[0]['full_description']
+    mock_client.embeddings.create.return_value = mock_response
+    
+    texts = ["Texte 1", "Texte 2"]
+    embeddings = generate_embeddings(texts)
+    
+    assert len(embeddings) == 2
+    assert embeddings[0] == [0.1, 0.2, 0.3]
+    mock_client.embeddings.create.assert_called_once()
+
+@patch('src.data_processing.generate_embeddings')
+def test_add_embeddings_to_df(mock_gen_emb):
+    """Teste l'ajout de la colonne embedding au DataFrame."""
+    mock_gen_emb.return_value = [[0.1, 0.1], [0.2, 0.2]]
+    
+    df = pd.DataFrame({
+        'full_description': ["Desc 1", "Desc 2"]
+    })
+    
+    df_result = add_embeddings_to_df(df)
+    
+    assert 'embedding' in df_result.columns
+    assert len(df_result) == 2
+    assert df_result.iloc[0]['embedding'] == [0.1, 0.1]
+    mock_gen_emb.assert_called_once_with(["Desc 1", "Desc 2"])
+
+def test_add_embeddings_to_empty_df():
+    """Vérifie le comportement avec un DataFrame vide."""
+    df = pd.DataFrame()
+    df_result = add_embeddings_to_df(df)
+    assert df_result.empty
 
 if __name__ == "__main__":
     pytest.main([__file__])
