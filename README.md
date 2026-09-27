@@ -57,7 +57,20 @@ CHUNK_OVERLAP=100
 
 ## Utilisation
 
-### Lancer le chatbot (Pipeline & Interface)
+### Lancer l'API REST
+Pour lancer l'API et accéder à la documentation interactive (Swagger) :
+```bash
+uv run python -m src.api
+```
+L'API sera accessible sur `http://127.0.0.1:8000`. La documentation est disponible sur `/docs`.
+
+### Évaluer la qualité du RAG (Ragas)
+Pour lancer l'évaluation automatique de la pertinence des réponses :
+```bash
+uv run python evaluate_rag.py
+```
+
+### Lancer le chatbot (Pipeline & Interface CLI)
 Pour lancer le chatbot (indexation automatique au premier lancement, puis mode interactif) :
 ```bash
 uv run python main.py
@@ -78,13 +91,18 @@ uv run pytest
 
 ## Structure du Projet
 
-- `main.py` : Point d'entrée principal (Indexation + Chatbot).
-- `verify_search.py` : Script utilitaire pour tester la recherche dans l'index.
 - `src/` :
+    - `api.py` : API REST (FastAPI) exposant le système RAG.
+    - `chatbot.py` : Logique de la chaîne RAG et interaction avec Mistral AI via LangChain.
     - `data_ingestion.py` : Récupération et nettoyage des données OpenAgenda.
     - `vector_store.py` : Gestion du chunking, de la vectorisation Mistral et de l'index FAISS.
-    - `chatbot.py` : Logique de la chaîne RAG et interaction avec Mistral AI via LangChain.
     - `data_processing.py` : Fonctions utilitaires pour les embeddings (legacy).
-- `data/` : Dossier contenant l'index FAISS et le cache des événements (géré automatiquement).
-- `tests/` : Tests unitaires (validation du chunking, du chatbot, etc.).
+- `tests/` :
+    - `api_test.py` : Tests fonctionnels de l'API.
+    - `test_chatbot.py` : Tests unitaires de la chaîne RAG.
+    - `test_data_processing.py` : Tests des utilitaires de traitement de données.
+- `main.py` : Point d'entrée principal pour le mode CLI.
+- `evaluate_rag.py` : Script d'évaluation des performances avec Ragas.
+- `verify_search.py` : Script utilitaire pour tester la recherche dans l'index.
+- `data/` : Dossier contenant l'index FAISS (géré automatiquement).
 - `pyproject.toml` : Configuration et dépendances.
