@@ -1,0 +1,29 @@
+services:
+  # Service de l'API RAG
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: puls-events-rag-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      indexer:
+        condition: service_completed_successfully
+
+  # Service pour construire l'index au démarrage ou sur demande
+  indexer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: puls-events-indexer
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    command: python build_index.py

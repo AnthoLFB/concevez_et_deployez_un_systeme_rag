@@ -14,11 +14,13 @@ def test_evaluate_route():
         
         # Mock du résultat Ragas
         mock_result = MagicMock()
-        mock_result.items.return_value = [
-            ("faithfulness", 0.9),
-            ("answer_relevancy", 0.8),
-            ("context_recall", 0.7),
-            ("context_precision", 0.85)
+        mock_result.scores = [
+            {
+                "faithfulness": 0.9,
+                "answer_relevancy": 0.8,
+                "context_recall": 0.7,
+                "context_precision": 0.85
+            }
         ]
         mock_result.to_pandas.return_value = pd.DataFrame([{
             "question": "Test ?",

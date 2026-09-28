@@ -11,7 +11,7 @@ Ce projet est un POC (Proof of Concept) d'un chatbot intelligent capable de rép
 
 ## Prérequis
 
-- Python >= 3.13
+- Python >= 3.12 (le projet utilise Python 3.12 pour la compatibilité Docker)
 - [uv](https://github.com/astral-sh/uv) installé sur votre machine.
 - Une clé API Mistral AI valide.
 
@@ -33,7 +33,12 @@ Le projet suit un pipeline de données en plusieurs étapes :
 
 2. Installez les dépendances avec `uv` :
    ```bash
-   uv sync
+   uv sync --python 3.12
+   ```
+
+3. (Optionnel) Mettre à jour le fichier requirements pour Docker :
+   ```bash
+   uv export --format requirements-txt --output-file requirements_docker.txt --python 3.12
    ```
 
 ## Configuration
@@ -99,6 +104,39 @@ uv run python verify_search.py
 Pour valider la logique de traitement, du chatbot et du découpage :
 ```bash
 uv run pytest
+```
+
+### Exécuter avec Docker
+
+Le projet est entièrement conteneurisé pour faciliter son déploiement et son exécution locale.
+
+#### Prérequis Docker
+- Docker installé.
+- Docker Compose (optionnel).
+
+#### 1. Configuration
+Assurez-vous que votre fichier `.env` est correctement rempli à la racine du projet.
+
+#### 2. Construction et lancement de l'API
+```bash
+docker compose up --build
+```
+L'API sera accessible sur `http://localhost:8000`.
+
+#### 3. Initialisation/Reconstruction de l'index
+L'index peut être construit manuellement à l'intérieur du conteneur si nécessaire :
+```bash
+docker compose run indexer
+```
+Ou via l'endpoint API `POST /rebuild`.
+
+#### 4. Utilisation sans Docker Compose
+```bash
+# Build
+docker build -t puls-events-rag-api .
+
+# Run
+docker run -p 8000:8000 --env-file .env -v ${PWD}/data:/app/data puls-events-rag-api
 ```
 
 ## Structure du Projet

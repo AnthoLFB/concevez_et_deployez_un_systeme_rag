@@ -36,16 +36,35 @@ def fetch_openagenda_events():
     # Et la date :
     where_query += f" and lastdate_end >= '{start_date_str}'"
 
-    params = {
-        "where": where_query,
-        "limit": 100  # On limite pour le POC
-    }
+    max_events = int(os.getenv("MAX_EVENTS", 100))
+    limit = 100  # Limite par requête imposée par l'API
+    all_events = []
+    offset = 0
     
-    response = requests.get(base_url, params=params)
-    response.raise_for_status()
-    
-    data = response.json()
-    return data.get("results", [])
+    while len(all_events) < max_events:
+        params = {
+            "where": where_query,
+            "limit": min(limit, max_events - len(all_events)),
+            "offset": offset
+        }
+        
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        
+        data = response.json()
+        results = data.get("results", [])
+        
+        if not results:
+            break
+            
+        all_events.extend(results)
+        offset += len(results)
+        
+        # Sécurité pour éviter les boucles infinies si le nombre total est atteint
+        if len(results) < params["limit"]:
+            break
+            
+    return all_events
 
 def process_events(events):
     """
