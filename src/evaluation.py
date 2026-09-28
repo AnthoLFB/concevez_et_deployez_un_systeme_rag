@@ -8,7 +8,7 @@ from ragas.metrics import (
     context_recall,
     context_precision,
 )
-from langchain_mistralai import ChatMistralAI
+from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -58,10 +58,19 @@ def run_rag_evaluation(rag_chain, test_data=None):
     }
     dataset = Dataset.from_dict(data_dict)
     
-    # 3. Configuration du modèle d'évaluation
+    # 3. Configuration des modèles d'évaluation (utilisation de Mistral au lieu d'OpenAI par défaut)
+    mistral_api_key = os.getenv("MISTRAL_API_KEY")
+    
+    # LLM utilisé pour l'évaluation (juge Ragas)
     eval_llm = ChatMistralAI(
-        mistral_api_key=os.getenv("MISTRAL_API_KEY"),
+        mistral_api_key=mistral_api_key,
         model=os.getenv("MISTRAL_MODEL", "mistral-large-latest")
+    )
+    
+    # Embeddings utilisés pour comparer les contextes et les réponses
+    eval_embeddings = MistralAIEmbeddings(
+        mistral_api_key=mistral_api_key,
+        model="mistral-embed"
     )
     
     # 4. Exécution de l'évaluation
@@ -73,7 +82,8 @@ def run_rag_evaluation(rag_chain, test_data=None):
             context_recall,
             context_precision,
         ],
-        llm=eval_llm
+        llm=eval_llm,
+        embeddings=eval_embeddings
     )
     
     return result

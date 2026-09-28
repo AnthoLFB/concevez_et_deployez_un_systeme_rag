@@ -34,10 +34,18 @@ def evaluate_rag():
     df_results = result.to_pandas()
     print(df_results)
     
-    # Calcul des moyennes
+    # Calcul des moyennes des scores
     print("\nScores moyens :")
-    for metric, score in result.items():
-        print(f"- {metric}: {score:.4f}")
+    # Dans Ragas 0.2.x, l'objet EvaluationResult.scores contient une liste de dictionnaires.
+    # On itère sur les métriques présentes pour calculer la moyenne globale de chacune.
+    if len(result.scores) > 0:
+        metrics = result.scores[0].keys()
+        for metric in metrics:
+            # Extraction des valeurs numériques pour chaque métrique
+            values = [s[metric] for s in result.scores if metric in s and s[metric] is not None]
+            if values:
+                avg = sum(values) / len(values)
+                print(f"- {metric}: {avg:.4f}")
         
     # Sauvegarde optionnelle
     df_results.to_csv("rag_evaluation_results.csv", index=False)

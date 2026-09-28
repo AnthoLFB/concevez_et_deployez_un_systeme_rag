@@ -11,7 +11,7 @@ Ce projet est un POC (Proof of Concept) d'un chatbot intelligent capable de rép
 
 ## Prérequis
 
-- Python >= 3.14
+- Python >= 3.13
 - [uv](https://github.com/astral-sh/uv) installé sur votre machine.
 - Une clé API Mistral AI valide.
 
@@ -64,11 +64,23 @@ uv run python -m src.api
 ```
 L'API sera accessible sur `http://127.0.0.1:8000`. La documentation est disponible sur `/docs`.
 
+Points de terminaison principaux :
+- `POST /ask` : Pose une question au chatbot.
+- `POST /rebuild` : Déclenche manuellement la récupération des données et la reconstruction de l'index FAISS.
+- `POST /evaluate` : Lance une évaluation Ragas via l'API.
+
 ### Évaluer la qualité du RAG (Ragas)
-Pour lancer l'évaluation automatique de la pertinence des réponses :
+Pour lancer l'évaluation automatique de la pertinence des réponses (utilise les modèles Mistral) :
 ```bash
 uv run python evaluate_rag.py
 ```
+L'évaluation calcule plusieurs métriques :
+- **Faithfulness** : Fidélité de la réponse par rapport au contexte.
+- **Answer Relevancy** : Pertinence de la réponse par rapport à la question.
+- **Context Recall** : Capacité à retrouver les informations nécessaires.
+- **Context Precision** : Précision du contexte récupéré.
+
+Les résultats sont sauvegardés dans `rag_evaluation_results.csv`.
 
 ### Lancer le chatbot (Pipeline & Interface CLI)
 Pour lancer le chatbot (indexation automatique au premier lancement, puis mode interactif) :

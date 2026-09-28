@@ -3,6 +3,23 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict
 import os
 import logging
+import asyncio
+import nest_asyncio
+
+# Patch nest_asyncio pour la compatibilité avec Python 3.12+ et uvicorn.
+# nest_asyncio patche asyncio.run mais ne supporte pas l'argument loop_factory introduit dans les versions récentes de Python.
+# Ce patch intercepte l'appel pour ignorer loop_factory s'il est absent du patch de nest_asyncio.
+nest_asyncio.apply()
+original_asyncio_run = asyncio.run
+
+def patched_asyncio_run(main, *, debug=None, loop_factory=None):
+    if loop_factory is None:
+        return original_asyncio_run(main, debug=debug)
+    # L'appel à original_asyncio_run ici utilise la version patchée par nest_asyncio.
+    return original_asyncio_run(main, debug=debug)
+
+asyncio.run = patched_asyncio_run
+
 from contextlib import asynccontextmanager
 from src.chatbot import get_chatbot_chain, ask_chatbot
 from src.vector_store import build_vector_store, create_chunks, save_vector_store
@@ -144,7 +161,15 @@ async def evaluate_rag_api(request: Optional[EvalRequest] = None):
         result = run_rag_evaluation(rag_chain, test_data)
         
         # Préparation de la réponse
-        scores = {metric: score for metric, score in result.items()}
+        # Calcul des moyennes pour Ragas 0.2+
+        scores = {}
+        if len(result.scores) > 0:
+            metrics = result.scores[0].keys()
+            for metric in metrics:
+                values = [s[metric] for s in result.scores if metric in s and s[metric] is not None]
+                if values:
+                    scores[metric] = float(sum(values) / len(values))
+        
         details = result.to_pandas().to_dict(orient="records")
         
         return EvalResponse(scores=scores, details=details)
