@@ -9,30 +9,34 @@ def test_evaluate_route():
     print("--- Test de la route /evaluate ---")
     
     # On mocke run_rag_evaluation pour éviter les appels LLM réels
-    with patch('src.api.run_rag_evaluation') as mock_eval, \
-         patch('src.api.rag_chain', new=MagicMock()):
+    with patch('src.api.run_rag_evaluation') as mock_eval:
+        app.state.rag_chain = MagicMock()
         
-        # Mock du résultat Ragas
-        mock_result = MagicMock()
-        mock_result.items.return_value = [
-            ("faithfulness", 0.9),
-            ("answer_relevancy", 0.8),
-            ("context_recall", 0.7),
-            ("context_precision", 0.85)
-        ]
-        mock_result.to_pandas.return_value = pd.DataFrame([{
-            "question": "Test ?",
-            "answer": "Reponse",
-            "contexts": ["Ctx"],
-            "ground_truth": "Truth",
-            "faithfulness": 0.9
-        }])
-        
-        mock_eval.return_value = mock_result
+        # Le nouveau run_rag_evaluation retourne un dict
+        mock_eval.return_value = {
+            "scores": {
+                "faithfulness": 0.9,
+                "answer_relevancy": 0.8,
+                "context_recall": 0.7,
+                "context_precision": 0.85
+            },
+            "details": [{
+                "question": "Test ?",
+                "answer": "Reponse",
+                "contexts": ["Ctx"],
+                "ground_truth": "Truth",
+                "faithfulness": 0.9
+            }]
+        }
         
         # Test 1: Évaluation par défaut
-        print("Test éval par défaut...")
-        response = client.post("/evaluate")
+        print("Test éval avec données par défaut...")
+        default_data = {
+            "test_data": [
+                {"question": "Quels sont les événements ?", "ground_truth": "Il y a des concerts."}
+            ]
+        }
+        response = client.post("/evaluate", json=default_data)
         assert response.status_code == 200
         data = response.json()
         assert "scores" in data

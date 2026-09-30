@@ -8,13 +8,14 @@ from langchain_core.documents import Document
 from langchain_mistralai import MistralAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 
 def get_embeddings():
-    """Crée l'objet d'embeddings utilisé pour construire et charger FAISS."""
+    """Crée l'objet d'embeddings Mistral utilisé par l'index."""
     api_key = os.getenv("MISTRAL_API_KEY")
 
     if not api_key:
@@ -28,26 +29,9 @@ def get_embeddings():
     )
 
 
-def clean_metadata_value(value):
-    """Convertit les valeurs Pandas problématiques en valeurs JSON simples."""
-    if value is None:
-        return None
-
-    try:
-        if value != value:  # NaN
-            return None
-    except Exception:
-        pass
-
-    text = str(value).strip()
-    return text if text else None
-
-
-def create_chunks(df, text_column="full_description") -> list[Document]:
+def create_chunks(df, text_column="full_description"):
     """
-    Découpe les événements nettoyés en chunks avant vectorisation.
-
-    Chaque chunk devient un Document LangChain avec ses métadonnées.
+    Découpe les événements en documents LangChain pour l'indexation.
     """
     if df.empty:
         return []
@@ -74,80 +58,79 @@ def create_chunks(df, text_column="full_description") -> list[Document]:
         length_function=len,
     )
 
-    documents: list[Document] = []
-    skipped_events = 0
+    documents = []
 
     for row in df.itertuples(index=False):
         text = getattr(row, text_column, "")
 
         if not isinstance(text, str) or not text.strip():
-            skipped_events += 1
             continue
 
         metadata = {
-            "uid": clean_metadata_value(getattr(row, "uid", None)),
-            "title": clean_metadata_value(getattr(row, "title_fr", None)),
-            "location_city": clean_metadata_value(
-                getattr(row, "location_city", None)
-            ),
-            "location": clean_metadata_value(
+            "uid": _clean_metadata_value(getattr(row, "uid", None)),
+            "title": _clean_metadata_value(getattr(row, "title_fr", None)),
+            "location": _clean_metadata_value(
                 getattr(row, "location_name", None)
             ),
-            "address": clean_metadata_value(
+            "address": _clean_metadata_value(
                 getattr(row, "location_address", None)
             ),
-            "start_date": clean_metadata_value(
+            "start_date": _clean_metadata_value(
                 getattr(row, "firstdate_begin", None)
             ),
-            "end_date": clean_metadata_value(
+            "end_date": _clean_metadata_value(
                 getattr(row, "lastdate_end", None)
             ),
         }
 
         chunks = text_splitter.split_text(text)
 
-        for chunk_index, chunk in enumerate(chunks):
+        for chunk in chunks:
             documents.append(
                 Document(
                     page_content=chunk,
-                    metadata={
-                        **metadata,
-                        "chunk_index": chunk_index,
-                    },
+                    metadata=metadata,
                 )
             )
 
     logger.info(
-        "Chunking terminé : %d événements en entrée, %d chunks créés, "
-        "%d événements ignorés.",
-        len(df),
+        "%d documents/chunks créés à partir de %d événements.",
         len(documents),
-        skipped_events,
+        len(df),
     )
 
     return documents
 
 
-def build_vector_store(documents: list[Document]):
-    """Vectorise chaque chunk avec Mistral et construit l'index FAISS."""
+def _clean_metadata_value(value):
+    """Évite de stocker NaN/NaT dans les métadonnées FAISS."""
+    if value is None:
+        return None
+
+    try:
+        # pandas n'est pas importé volontairement dans ce helper ;
+        # la conversion textuelle reste suffisante pour les métadonnées.
+        if str(value) in {"nan", "NaT"}:
+            return None
+    except Exception:
+        return None
+
+    return value
+
+
+def build_vector_store(documents):
+    """Construit un index FAISS à partir des documents."""
     if not documents:
         raise ValueError(
-            "Impossible de construire FAISS : aucun chunk à vectoriser."
+            "Impossible de construire un index FAISS sans documents."
         )
 
     embeddings = get_embeddings()
-
-    logger.info(
-        "Vectorisation et indexation de %d chunks dans FAISS...",
-        len(documents),
-    )
 
     vector_store = FAISS.from_documents(
         documents,
         embeddings,
     )
-
-    logger.info("Index FAISS créé avec succès.")
 
     return vector_store
 
@@ -160,10 +143,7 @@ def save_vector_store(vector_store, path=None):
     )
 
     index_path = Path(path)
-    index_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    index_path.parent.mkdir(parents=True, exist_ok=True)
 
     vector_store.save_local(str(index_path))
 
@@ -182,19 +162,16 @@ def load_vector_store(path=None):
 
     index_path = Path(path)
 
-    if not (index_path / "index.faiss").is_file():
+    if not index_path.is_dir():
         raise FileNotFoundError(
-            f"Fichier index.faiss introuvable dans : {index_path}"
-        )
-
-    if not (index_path / "index.pkl").is_file():
-        raise FileNotFoundError(
-            f"Fichier index.pkl introuvable dans : {index_path}"
+            f"Le dossier de l'index FAISS est introuvable : {index_path}"
         )
 
     embeddings = get_embeddings()
 
-    # Le fichier index.pkl est généré par notre propre pipeline.
+    # allow_dangerous_deserialization est nécessaire avec LangChain
+    # pour charger le fichier pickle associé à l'index.
+    # Ne charger que des fichiers d'index générés/contrôlés par le projet.
     return FAISS.load_local(
         str(index_path),
         embeddings,
@@ -203,8 +180,8 @@ def load_vector_store(path=None):
 
 
 def search_events(query, vector_store, k=4):
-    """Recherche les chunks les plus proches sémantiquement."""
-    if not isinstance(query, str) or not query.strip():
+    """Retourne les documents les plus proches sémantiquement."""
+    if not query.strip():
         return []
 
     if k <= 0:
@@ -217,14 +194,7 @@ def search_events(query, vector_store, k=4):
 
 
 if __name__ == "__main__":
-    import logging
-
-    from src.data_ingestion import (
-        fetch_openagenda_events,
-        process_events,
-    )
-
-    logging.basicConfig(level=logging.INFO)
+    from src.data_ingestion import fetch_openagenda_events, process_events
 
     print("Récupération des événements...")
     events = fetch_openagenda_events()
@@ -233,15 +203,14 @@ if __name__ == "__main__":
         print("Aucun événement trouvé.")
         raise SystemExit(0)
 
-    print(f"Événements récupérés : {len(events)}")
-
     df = process_events(events)
-    print(f"Événements conservés après nettoyage : {len(df)}")
-    print("Statistiques de nettoyage :", df.attrs.get("processing_stats", {}))
+
+    print(f"Nombre d'événements à indexer : {len(df)}")
 
     print("Création des chunks...")
     documents = create_chunks(df)
-    print(f"Chunks créés : {len(documents)}")
+
+    print(f"Nombre de documents créés : {len(documents)}")
 
     print("Construction de l'index FAISS...")
     vector_store = build_vector_store(documents)
@@ -250,8 +219,8 @@ if __name__ == "__main__":
     save_vector_store(vector_store)
 
     query = "concert de musique à Lille"
-    print(f"\nTest de recherche pour : '{query}'")
 
+    print(f"\nTest de recherche pour : '{query}'")
     matches = search_events(query, vector_store)
 
     for index, document in enumerate(matches, start=1):

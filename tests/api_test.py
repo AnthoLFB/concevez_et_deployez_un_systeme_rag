@@ -1,6 +1,7 @@
 import requests
 import time
 import sys
+import pandas as pd
 from fastapi.testclient import TestClient
 from src.api import app
 
@@ -55,8 +56,8 @@ def test_api():
          patch('src.api.get_chatbot_chain') as mock_chain:
         
         mock_fetch.return_value = [{"uid": 1, "title_fr": "Event"}]
-        mock_process.return_value = MagicMock()
-        mock_chunks.return_value = []
+        mock_process.return_value = pd.DataFrame([{"uid": 1, "title_fr": "Event", "full_description": "Test Event Content"}])
+        mock_chunks.return_value = [MagicMock()]
         mock_vs.return_value = MagicMock()
         mock_chain.return_value = MagicMock()
         

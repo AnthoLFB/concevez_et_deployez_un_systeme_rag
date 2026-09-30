@@ -32,7 +32,7 @@ def test_create_chunks_logic():
     # Vérification des métadonnées
     doc = documents[0]
     assert doc.metadata['title'] == 'Evénement Test'
-    assert doc.metadata['uid'] == 123
+    assert doc.metadata['uid'] == '123'
     assert doc.metadata['location'] == 'Lille Grand Palais'
     
     # Vérification du contenu
@@ -72,9 +72,13 @@ def test_load_vector_store(mock_embeddings, mock_faiss, tmp_path):
     """Vérifie le chargement du vector store."""
     mock_vs = MagicMock()
     mock_faiss.load_local.return_value = mock_vs
-    save_path = str(tmp_path / "faiss_index")
+    save_path = tmp_path / "faiss_index"
+    save_path.mkdir()
+    (save_path / "index.faiss").touch()
+    (save_path / "index.pkl").touch()
+    save_path_str = str(save_path)
     
-    vs = load_vector_store(path=save_path)
+    vs = load_vector_store(path=save_path_str)
     
     assert vs == mock_vs
     mock_faiss.load_local.assert_called_once()

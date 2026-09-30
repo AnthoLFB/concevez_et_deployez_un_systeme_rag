@@ -9,7 +9,7 @@ from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from ragas import evaluate
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
-from ragas.metrics.collections import (
+from ragas.metrics import (
     AnswerRelevancy,
     ContextPrecision,
     ContextRecall,
