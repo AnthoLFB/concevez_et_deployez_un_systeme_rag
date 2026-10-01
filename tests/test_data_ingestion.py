@@ -16,7 +16,7 @@ def test_process_events():
     sample_events = [
         {
             'uid': '1',
-            'title_fr': 'Test Event',
+            'title_fr': 'Concert de Jazz',
             'description_fr': 'Desc',
             'longdescription_fr': '<p>Long Desc</p>',
             'location_name': 'Lille',
@@ -30,7 +30,7 @@ def test_process_events():
     assert 'full_description' in df.columns
     assert 'Long Desc' in df.iloc[0]['full_description']
     assert '<p>' not in df.iloc[0]['full_description']
-    assert 'Test Event' in df.iloc[0]['full_description']
+    assert 'Concert de Jazz' in df.iloc[0]['full_description']
 
 def test_process_events_empty():
     """Vérifie le comportement avec une liste vide."""

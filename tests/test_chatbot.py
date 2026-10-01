@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, ANY
 from src.chatbot import get_chatbot_chain, ask_chatbot
 from langchain_core.documents import Document
 
@@ -40,7 +40,11 @@ def test_ask_chatbot_integration_mock():
     response = ask_chatbot(query, mock_chain)
     
     assert response == "Lille Piano(s) Festival"
-    mock_chain.invoke.assert_called_once_with({"input": query})
+    mock_chain.invoke.assert_called_once_with({
+        "input": query,
+        "current_date": ANY,
+        "weekend_dates": ANY
+    })
 
 def test_chatbot_main_execution():
     """Vérifie que le bloc __main__ ne plante pas (optionnel mais utile pour la couverture)."""

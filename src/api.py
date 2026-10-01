@@ -1,13 +1,14 @@
+import json
+import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from threading import Lock
 from typing import Any
 
-import logging
-import os
-
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from src.chatbot import ask_chatbot, get_chatbot_chain
@@ -83,6 +84,15 @@ async def lifespan(app: FastAPI):
     """
     app.state.rag_chain = None
 
+    # Vérification des variables d'environnement critiques au démarrage
+    required_vars = ["MISTRAL_API_KEY", "OPENDATA_API_URL"]
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    
+    if missing_vars:
+        logger.error("Variables d'environnement manquantes : %s", ", ".join(missing_vars))
+        # On ne lève pas d'exception pour permettre à l'API de démarrer
+        # et de laisser l'utilisateur configurer son env si besoin (via redémarrage).
+    
     faiss_path = os.getenv("FAISS_INDEX_PATH", "data/faiss_index")
 
     logger.info("Initialisation du système RAG...")
@@ -110,6 +120,21 @@ async def lifespan(app: FastAPI):
     app.state.rag_chain = None
 
 
+class PrettyJSONResponse(JSONResponse):
+    """
+    Une classe de réponse personnalisée qui retourne du JSON indenté (pretty-print).
+    """
+
+    def render(self, content: Any) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=4,
+            separators=(",", ": "),
+        ).encode("utf-8")
+
+
 app = FastAPI(
     title="Puls-Events RAG API",
     description=(
@@ -118,6 +143,11 @@ app = FastAPI(
     ),
     version="1.0.0",
     lifespan=lifespan,
+    default_response_class=PrettyJSONResponse,
+    swagger_ui_parameters={
+        "defaultModelExpandDepth": 3,
+        "defaultModelsExpandDepth": 3,
+    },
 )
 
 

@@ -2,7 +2,7 @@ import html
 import logging
 import os
 import re
-from datetime import date
+from datetime import date, datetime
 
 import pandas as pd
 import requests
@@ -79,11 +79,57 @@ def clean_text(value) -> str:
     text = re.sub(r"[\u200b\u200c\u200d\ufeff]", "", text)
     text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", " ", text)
 
+    # Supprime les URLs.
+    text = re.sub(r"https?://\S+|www\.\S+", " ", text)
+
     # Normalise les espaces, sans toucher aux accents ni à la casse.
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n\s*\n+", "\n", text)
 
+    # Si le texte est entièrement en majuscules (fréquent sur certains titres),
+    # on le normalise pour ne pas perturber les embeddings.
+    if text.isupper() and len(text) > 10:
+        text = text.capitalize()
+
     return text.strip()
+
+
+def format_date_fr(iso_str: str) -> str:
+    """
+    Transforme une date ISO (ex: 2024-12-01T18:30:00Z) en format texte
+    naturel pour le LLM (ex: dimanche 1 décembre 2024 à 18h30).
+    """
+    if not iso_str or not isinstance(iso_str, str):
+        return ""
+
+    try:
+        # On gère le suffixe Z de manière compatible ISO.
+        clean_iso = iso_str.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(clean_iso)
+
+        days = [
+            "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"
+        ]
+        months = [
+            "janvier", "février", "mars", "avril", "mai", "juin",
+            "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+        ]
+
+        jour_semaine = days[dt.weekday()]
+        jour = dt.day
+        mois_str = months[dt.month - 1]
+        annee = dt.year
+        heure = dt.hour
+        minute = dt.minute
+
+        res = f"{jour_semaine} {jour} {mois_str} {annee}"
+        if heure != 0 or minute != 0:
+            res += f" à {heure:02d}h{minute:02d}"
+
+        return res
+    except Exception:
+        # En cas d'erreur de parsing, on renvoie la chaîne originale nettoyée.
+        return iso_str
 
 
 def fetch_openagenda_events() -> list[dict]:
@@ -142,17 +188,22 @@ def fetch_openagenda_events() -> list[dict]:
     count_data = count_response.json()
 
     total_count = int(count_data.get("total_count", 0))
+    max_events = int(os.getenv("MAX_EVENTS", "1000"))
+    
+    # On limite le nombre d'événements à récupérer
+    effective_total = min(total_count, max_events)
 
     logger.info(
-        "OpenAgenda indique %d événements correspondant au filtre.",
+        "OpenAgenda indique %d événements correspondant au filtre (limite fixée à %d).",
         total_count,
+        effective_total,
     )
 
-    if total_count == 0:
+    if effective_total == 0:
         return []
 
     # L'API records documente une limite cumulée de offset + limit < 10000.
-    if total_count >= 10000:
+    if effective_total >= 10000:
         raise RuntimeError(
             "Le filtre retourne 10 000 événements ou plus. "
             "L'endpoint /records atteint alors sa limite de pagination. "
@@ -162,12 +213,13 @@ def fetch_openagenda_events() -> list[dict]:
     all_events: list[dict] = []
     offset = 0
 
-    while offset < total_count:
+    while offset < effective_total:
+        current_limit = min(page_size, effective_total - offset)
         response = requests.get(
             base_url,
             params={
                 "where": where_query,
-                "limit": page_size,
+                "limit": current_limit,
                 "offset": offset,
             },
             timeout=timeout,
@@ -185,19 +237,19 @@ def fetch_openagenda_events() -> list[dict]:
 
         logger.info(
             "Progression OpenAgenda : %d/%d événements récupérés.",
-            min(offset, total_count),
-            total_count,
+            min(offset, effective_total),
+            effective_total,
         )
 
-        if len(results) < page_size:
+        if len(results) < current_limit:
             break
 
-    # On vérifie qu'on n'a pas silencieusement récupéré moins que le total annoncé.
-    if len(all_events) != total_count:
-        raise RuntimeError(
-            "L'API a annoncé "
-            f"{total_count} événements, mais seulement "
-            f"{len(all_events)} ont été récupérés."
+    # On vérifie qu'on n'a pas silencieusement récupéré moins que ce qu'on pouvait.
+    if len(all_events) < effective_total and len(all_events) < total_count:
+        logger.warning(
+            "L'API a retourné moins d'événements que prévu : %d au lieu de %d",
+            len(all_events),
+            effective_total
         )
 
     logger.info(
@@ -229,6 +281,7 @@ def process_events(events: list[dict]) -> pd.DataFrame:
         "exact_duplicates_removed": 0,
         "uid_duplicates_removed": 0,
         "empty_content_removed": 0,
+        "noise_events_removed": 0,
         "retained": 0,
     }
 
@@ -280,9 +333,25 @@ def process_events(events: list[dict]) -> pd.DataFrame:
     stats["empty_content_removed"] = int((~has_content).sum())
     df = df.loc[has_content].copy()
 
-    # 4. Construit un texte enrichi pour les embeddings.
+    # 4. Suppression des événements de "bruit" (tests, annulations).
+    noise_keywords = ["test ", "test_", "lorem ipsum", "à supprimer", "annulé", "reporté"]
+    is_noise = df["title_fr"].str.lower().apply(
+        lambda x: any(kw in x for kw in noise_keywords) or x.strip() == "test"
+    )
+    stats["noise_events_removed"] = int(is_noise.sum())
+    df = df.loc[~is_noise].copy()
+
+    # 5. Construit un texte enrichi pour les embeddings.
     def build_full_description(row) -> str:
         sections = []
+
+        # On extrait l'année pour la mettre en évidence au début du texte
+        if row["firstdate_begin"]:
+            try:
+                dt = datetime.fromisoformat(row["firstdate_begin"].replace("Z", "+00:00"))
+                sections.append(f"ÉVÉNEMENT PRÉVU EN {dt.year}")
+            except:
+                pass
 
         if row["title_fr"]:
             sections.append(f"Titre : {row['title_fr']}")
@@ -301,11 +370,14 @@ def process_events(events: list[dict]) -> pd.DataFrame:
         if row["location_address"]:
             sections.append(f"Adresse : {row['location_address']}")
 
+        # On utilise le formatage naturel pour les dates.
         if row["firstdate_begin"]:
-            sections.append(f"Début : {row['firstdate_begin']}")
+            date_text = format_date_fr(row["firstdate_begin"])
+            sections.append(f"Début : {date_text}")
 
         if row["lastdate_end"]:
-            sections.append(f"Fin : {row['lastdate_end']}")
+            date_text = format_date_fr(row["lastdate_end"])
+            sections.append(f"Fin : {date_text}")
 
         return "\n".join(sections)
 
@@ -319,11 +391,13 @@ def process_events(events: list[dict]) -> pd.DataFrame:
 
     logger.info(
         "Nettoyage terminé : reçus=%d, doublons exacts supprimés=%d, "
-        "doublons UID supprimés=%d, sans contenu supprimés=%d, conservés=%d.",
+        "doublons UID supprimés=%d, sans contenu supprimés=%d, "
+        "bruit supprimés=%d, conservés=%d.",
         stats["received"],
         stats["exact_duplicates_removed"],
         stats["uid_duplicates_removed"],
         stats["empty_content_removed"],
+        stats["noise_events_removed"],
         stats["retained"],
     )
 
