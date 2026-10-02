@@ -1,0 +1,41 @@
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# IDE / OS
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.venv
+venv
+
+# Secrets & env locaux (NE PAS copier dans l'image)
+.env
+.env.*
+!.env.example
+
+# Données locales et artefacts générés
+data/
+*.pkl
+rag_evaluation_results.csv
+
+# Docs / fichiers volumineux inutiles au runtime
+*.md
+!README.md
+tests_files_rag/
+docs/
+
+# Docker lui-même
+Dockerfile
+docker-compose.yml
+.dockerignore

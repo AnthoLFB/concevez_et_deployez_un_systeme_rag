@@ -1,0 +1,32 @@
+services:
+  # Service principal : API FastAPI exposée sur http://localhost:8000
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: puls-events-rag:latest
+    container_name: puls-events-rag-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Persistance de l'index FAISS entre les runs.
+      - ./data:/app/data
+    restart: unless-stopped
+
+  # Service utilitaire : construction de l'index vectoriel (one-shot).
+  # Lancer : docker compose run --rm build-index
+  build-index:
+    image: puls-events-rag:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: puls-events-rag-build-index
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    command: ["python", "scripts/build_index.py"]
+    profiles:
+      - tools

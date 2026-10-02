@@ -130,6 +130,63 @@ Pour valider la logique de traitement, du chatbot et du découpage :
 uv run pytest
 ```
 
+## Déploiement Docker
+
+Le projet est entièrement conteneurisé. Deux artefacts sont fournis :
+
+- `Dockerfile` : image multi-étapes basée sur `python:3.12-slim`, dépendances
+  installées avec `uv sync --frozen` depuis `uv.lock`.
+- `docker-compose.yml` : orchestration locale (API + service one-shot de
+  construction de l'index).
+- `scripts/build_index.py` : script Python autonome qui exécute le pipeline
+  complet d'indexation (ingestion → chunking → vectorisation → sauvegarde FAISS).
+
+### 1. Préparer le fichier `.env`
+À la racine du projet (il est monté dans le conteneur via `env_file`) :
+```env
+MISTRAL_API_KEY=sk-...
+OPENDATA_API_URL=https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/evenements-publics-openagenda/records
+CITY=Lille
+HISTORY_YEARS=1
+FAISS_INDEX_PATH=/app/data/faiss_index
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=100
+```
+
+### 2. Construire l'image
+```bash
+docker compose build
+# ou directement :
+docker build -t puls-events-rag:latest .
+```
+
+### 3. Construire l'index vectoriel (une fois)
+L'index est persisté dans `./data` via un volume monté :
+```bash
+docker compose --profile tools run --rm build-index
+```
+
+### 4. Lancer l'API
+```bash
+docker compose up -d api
+```
+L'API est disponible sur [http://localhost:8000](http://localhost:8000) et la
+documentation Swagger sur [http://localhost:8000/docs](http://localhost:8000/docs).
+
+Pour arrêter :
+```bash
+docker compose down
+```
+
+### Alternative sans Docker Compose
+```bash
+docker run --rm -it \
+  --env-file .env \
+  -v ${PWD}/data:/app/data \
+  -p 8000:8000 \
+  puls-events-rag:latest
+```
+
 ## Structure du Projet
 
 - `src/` :

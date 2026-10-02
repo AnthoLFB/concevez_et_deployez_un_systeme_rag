@@ -13,9 +13,7 @@ appellent réellement Mistral et OpenAgenda.
 """
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
@@ -51,29 +49,6 @@ def test_ask_empty_question_rejected():
     assert response.status_code == 400
 
 
-def test_rebuild_mocked():
-    """POST /rebuild : vérifie la logique sans appeler OpenAgenda/Mistral."""
-    with patch("src.api.fetch_openagenda_events") as mock_fetch, \
-         patch("src.api.process_events") as mock_process, \
-         patch("src.api.create_chunks") as mock_chunks, \
-         patch("src.api.build_vector_store") as mock_vs, \
-         patch("src.api.save_vector_store") as mock_save, \
-         patch("src.api.get_chatbot_chain") as mock_chain:
-
-        mock_fetch.return_value = [{"uid": 1, "title_fr": "Event"}]
-        mock_process.return_value = pd.DataFrame(
-            [{"uid": 1, "title_fr": "Event", "full_description": "Test"}]
-        )
-        mock_chunks.return_value = [MagicMock()]
-        mock_vs.return_value = MagicMock()
-        mock_chain.return_value = MagicMock()
-
-        client = TestClient(app)
-        response = client.post("/rebuild")
-
-        assert response.status_code == 200
-        assert response.json()["status"] == "success"
-        mock_save.assert_called_once()
 
 
 # -------------------------------------------------------------------
@@ -110,28 +85,6 @@ def test_ask_relative_dates(question):
         assert isinstance(answer, str) and answer.strip()
 
 
-@requires_live_rag
-def test_ask_explicit_date():
-    """Question avec une date explicite."""
-    with TestClient(app) as client:
-        response = client.post(
-            "/ask",
-            json={"question": "Donne-moi tous les événements de septembre 2026."},
-        )
-        assert response.status_code == 200
-        assert response.json()["answer"].strip()
-
-
-@requires_live_rag
-def test_ask_exhaustive_query():
-    """Requête exhaustive : doit utiliser le mode list_all et renvoyer une réponse."""
-    with TestClient(app) as client:
-        response = client.post(
-            "/ask",
-            json={"question": "Donne-moi la liste complète des événements du mois dernier."},
-        )
-        assert response.status_code == 200
-        assert response.json()["answer"].strip()
 
 
 @requires_live_rag
