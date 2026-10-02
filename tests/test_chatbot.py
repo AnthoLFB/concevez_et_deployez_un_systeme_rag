@@ -1,63 +1,96 @@
+from datetime import date
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, ANY
-from src.chatbot import get_chatbot_chain, ask_chatbot
 from langchain_core.documents import Document
 
-@patch('src.chatbot.load_vector_store')
-@patch('src.chatbot.ChatMistralAI')
-def test_get_chatbot_chain(mock_mistral, mock_load_vs):
-    """
-    Vérifie que la chaîne du chatbot est correctement initialisée avec ses composants.
-    """
-    # Configuration des mocks
+from src.chatbot import (
+    QueryFilters,
+    RAGChatbot,
+    _overlaps,
+    _unique_events,
+    ask_chatbot,
+    get_chatbot_chain,
+)
+
+
+@patch("src.chatbot.load_vector_store")
+@patch("src.chatbot.ChatMistralAI")
+def test_get_chatbot_chain(mock_mistral_cls, mock_load_vs, monkeypatch):
+    """get_chatbot_chain assemble vector_store + parser + answer_chain."""
+    monkeypatch.setenv("MISTRAL_API_KEY", "fake-key")
+
     mock_vs = MagicMock()
-    mock_retriever = MagicMock()
-    mock_vs.as_retriever.return_value = mock_retriever
     mock_load_vs.return_value = mock_vs
-    
+
     mock_llm = MagicMock()
-    mock_mistral.return_value = mock_llm
-    
-    # Appel de la fonction
-    chain = get_chatbot_chain()
-    
-    # Vérifications
-    assert chain is not None
+    mock_llm.with_structured_output.return_value = MagicMock(name="parser")
+    mock_mistral_cls.return_value = mock_llm
+
+    chatbot = get_chatbot_chain()
+
+    assert isinstance(chatbot, RAGChatbot)
+    assert chatbot.vector_store is mock_vs
     mock_load_vs.assert_called_once()
-    mock_vs.as_retriever.assert_called_once()
-    mock_mistral.assert_called_once()
+    mock_mistral_cls.assert_called_once()
+    mock_llm.with_structured_output.assert_called_once()
 
-def test_ask_chatbot_integration_mock():
-    """
-    Teste ask_chatbot en mockant l'invocation de la chaîne.
-    """
-    mock_chain = MagicMock()
-    # Dans langchain_classic.chains.create_retrieval_chain, 
-    # l'objet retourné répond à .invoke() et retourne un dict avec "answer"
-    mock_chain.invoke.return_value = {"answer": "Lille Piano(s) Festival"}
-    
-    query = "Quoi de neuf ?"
-    response = ask_chatbot(query, mock_chain)
-    
-    assert response == "Lille Piano(s) Festival"
-    mock_chain.invoke.assert_called_once_with({
-        "input": query,
-        "current_date": ANY,
-        "weekend_dates": ANY
-    })
 
-def test_chatbot_main_execution():
-    """Vérifie que le bloc __main__ ne plante pas (optionnel mais utile pour la couverture)."""
-    with patch('src.chatbot.get_chatbot_chain') as mock_get_chain, \
-         patch('src.chatbot.ask_chatbot') as mock_ask:
-        mock_get_chain.return_value = MagicMock()
-        mock_ask.return_value = "Réponse test"
-        
-        # Simuler l'exécution du bloc main
-        import src.chatbot as chatbot
-        # Note: charger le module exécute le code global, mais pas le bloc if __name__ == "__main__"
-        # On peut appeler manuellement si on veut tester le contenu du bloc main, 
-        # mais c'est souvent délicat. Ici on se contente de vérifier les fonctions.
+def test_get_chatbot_chain_requires_api_key(monkeypatch):
+    monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="MISTRAL_API_KEY"):
+        get_chatbot_chain()
 
-if __name__ == "__main__":
-    pytest.main([__file__])
+
+def test_ask_chatbot_returns_answer():
+    """ask_chatbot délègue à la chaîne et renvoie uniquement la réponse texte."""
+    chatbot = RAGChatbot(
+        vector_store=MagicMock(),
+        query_parser=MagicMock(),
+        answer_chain=MagicMock(),
+    )
+
+    # Pas de contrainte temporelle, pas de search_query -> fallback sur question
+    chatbot.query_parser.invoke.return_value = QueryFilters()
+    chatbot.vector_store.similarity_search.return_value = [
+        Document(page_content="info", metadata={"uid": "1"})
+    ]
+    chatbot.answer_chain.invoke.return_value = "Réponse générée"
+
+    result = ask_chatbot("Quels événements ?", chatbot)
+
+    assert result == "Réponse générée"
+    chatbot.answer_chain.invoke.assert_called_once()
+
+
+def test_ask_chatbot_empty_question_raises():
+    chatbot = RAGChatbot(
+        vector_store=MagicMock(),
+        query_parser=MagicMock(),
+        answer_chain=MagicMock(),
+    )
+    with pytest.raises(ValueError):
+        ask_chatbot("   ", chatbot)
+
+
+def test_overlaps_handles_missing_dates():
+    doc = Document(
+        page_content="",
+        metadata={"start_date": "2024-05-01", "end_date": "2024-05-03"},
+    )
+    assert _overlaps(doc, date(2024, 5, 2), date(2024, 5, 2)) is True
+    assert _overlaps(doc, date(2024, 6, 1), date(2024, 6, 2)) is False
+    # Sans aucune date, l'événement n'est pas gardé
+    doc_empty = Document(page_content="", metadata={})
+    assert _overlaps(doc_empty, date(2024, 1, 1), None) is False
+
+
+def test_unique_events_deduplicates_by_uid():
+    docs = [
+        Document(page_content="a", metadata={"uid": "1"}),
+        Document(page_content="b", metadata={"uid": "1"}),
+        Document(page_content="c", metadata={"uid": "2"}),
+    ]
+    result = _unique_events(docs)
+    assert len(result) == 2
+    assert [d.metadata["uid"] for d in result] == ["1", "2"]

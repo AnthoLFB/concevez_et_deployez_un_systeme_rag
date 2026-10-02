@@ -4,7 +4,6 @@ from typing import Any
 
 import pandas as pd
 from datasets import Dataset
-from dotenv import load_dotenv
 from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from ragas import evaluate
 from ragas.embeddings import LangchainEmbeddingsWrapper
@@ -16,8 +15,8 @@ from ragas.metrics.collections import (
     Faithfulness,
 )
 
+from src.chatbot import ask_chatbot_with_context
 
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +24,17 @@ logger = logging.getLogger(__name__)
 def _generate_rag_results(rag_chain, test_data):
     """
     Exécute le RAG sur chaque question et récupère les réponses/contextes.
-    """
-    questions = [item["question"] for item in test_data]
 
+    `rag_chain` est ici l'objet `RAGChatbot` renvoyé par `get_chatbot_chain`.
+    """
     answers = []
     contexts = []
 
-    for question in questions:
-        logger.info(
-            "Évaluation de la question : %s",
-            question,
-        )
+    for item in test_data:
+        question = item["question"]
+        logger.info("Évaluation de la question : %s", question)
 
-        response = rag_chain.invoke(
-            {"input": question}
-        )
+        response = ask_chatbot_with_context(question, rag_chain)
 
         answer = response.get("answer")
         retrieved_contexts = response.get("context", [])
@@ -52,10 +47,7 @@ def _generate_rag_results(rag_chain, test_data):
 
         answers.append(answer)
         contexts.append(
-            [
-                document.page_content
-                for document in retrieved_contexts
-            ]
+            [document.page_content for document in retrieved_contexts]
         )
 
     return answers, contexts

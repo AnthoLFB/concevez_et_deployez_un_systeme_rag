@@ -2,13 +2,10 @@ import logging
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_mistralai import MistralAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +191,10 @@ def load_vector_store(path=None):
 
     embeddings = get_embeddings()
 
-    # Le fichier index.pkl est généré par notre propre pipeline.
+    # SECURITE : allow_dangerous_deserialization=True désérialise un pickle.
+    # Ce flag est acceptable UNIQUEMENT parce que index.pkl est produit par
+    # notre propre pipeline (/rebuild) et stocké localement.
+    # Ne JAMAIS charger un index.pkl provenant d'une source externe non fiable.
     return FAISS.load_local(
         str(index_path),
         embeddings,
@@ -217,8 +217,6 @@ def search_events(query, vector_store, k=4):
 
 
 if __name__ == "__main__":
-    import logging
-
     from src.data_ingestion import (
         fetch_openagenda_events,
         process_events,

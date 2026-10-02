@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from dotenv import load_dotenv
 from langchain.chains.combine_documents.stuff import create_stuff_documents_chain
+from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_mistralai import ChatMistralAI
@@ -15,7 +15,6 @@ from pydantic import BaseModel, Field
 from src.vector_store import load_vector_store
 
 
-load_dotenv()
 logger = logging.getLogger(__name__)
 PARIS_TZ = ZoneInfo("Europe/Paris")
 
@@ -51,9 +50,12 @@ class QueryFilters(BaseModel):
 
 @dataclass
 class RAGChatbot:
-    vector_store: Any
+    vector_store: FAISS
     query_parser: Any
     answer_chain: Any
+    # Cache des documents complets du vector_store, utilisé pour les recherches
+    # exhaustives (list_all). None tant qu'il n'a pas été construit.
+    _all_documents_cache: list[Document] | None = None
 
 
 def _today() -> date:
@@ -136,8 +138,12 @@ def _unique_events(
     return result
 
 
-def _all_documents(vector_store) -> list[Document]:
-    """Récupère tous les documents stockés dans le docstore FAISS."""
+def _all_documents(chatbot: "RAGChatbot") -> list[Document]:
+    """Récupère tous les documents du docstore FAISS, avec mise en cache."""
+    if chatbot._all_documents_cache is not None:
+        return chatbot._all_documents_cache
+
+    vector_store = chatbot.vector_store
     documents = []
 
     for docstore_id in vector_store.index_to_docstore_id.values():
@@ -146,6 +152,7 @@ def _all_documents(vector_store) -> list[Document]:
         if document is not None:
             documents.append(document)
 
+    chatbot._all_documents_cache = documents
     return documents
 
 
@@ -278,8 +285,7 @@ Extrait uniquement les éléments nécessaires à la recherche :
 
 Interprète naturellement les expressions telles que :
 "aujourd'hui", "demain", "ce week-end", "le mois dernier",
-"la semaine prochaine", "samedi prochain", "dans deux semaines",
-"en septembre", "du 3 au 4 octobre 2026", etc.
+"la semaine prochaine", "samedi prochain", "dans deux semaines", etc.
 
 Pour une période, retourne ses deux bornes.
 Pour une date précise, utilise la même date comme début et fin.
@@ -331,9 +337,7 @@ def _retrieve(
         # Une recherche vectorielle n'est pas adaptée à cette demande
         # car elle ne garantit pas de récupérer tous les événements.
         if filters.list_all and not search_query:
-            documents = _all_documents(
-                chatbot.vector_store
-            )
+            documents = _all_documents(chatbot)
 
             documents = [
                 document
@@ -419,11 +423,18 @@ def _retrieve(
     return documents
 
 
-def ask_chatbot(
+def ask_chatbot_with_context(
     query: str,
     chatbot: RAGChatbot,
-):
-    """Interprète la question, récupère les documents puis génère la réponse."""
+) -> dict:
+    """
+    Variante de `ask_chatbot` qui renvoie également les documents retrouvés.
+
+    Utile pour l'évaluation Ragas, qui a besoin de la liste des contextes
+    utilisés pour générer la réponse.
+
+    Retourne un dict : {"answer": str, "context": list[Document], "filters": QueryFilters}.
+    """
     question = query.strip()
     if not question:
         raise ValueError("La question ne peut pas être vide.")
@@ -431,11 +442,7 @@ def ask_chatbot(
     today = _today()
 
     # 1. Compréhension du langage naturel.
-    filters = _parse_query(
-        chatbot,
-        question,
-        today,
-    )
+    filters = _parse_query(chatbot, question, today)
 
     logger.info(
         "Question analysée : start=%r, end=%r, search=%r, list_all=%r",
@@ -446,14 +453,14 @@ def ask_chatbot(
     )
 
     # 2. Recherche dans FAISS.
-    documents = _retrieve(
-        chatbot,
-        question,
-        filters,
-    )
+    documents = _retrieve(chatbot, question, filters)
 
     if not documents:
-        return "Je ne dispose pas de cette information."
+        return {
+            "answer": "Je ne dispose pas de cette information.",
+            "context": [],
+            "filters": filters,
+        }
 
     # 3. Génération de la réponse finale.
     answer = chatbot.answer_chain.invoke(
@@ -469,4 +476,12 @@ def ask_chatbot(
             "La chaîne RAG n'a pas retourné de réponse."
         )
 
-    return answer
+    return {"answer": answer, "context": documents, "filters": filters}
+
+
+def ask_chatbot(
+    query: str,
+    chatbot: RAGChatbot,
+) -> str:
+    """Interprète la question, récupère les documents puis génère la réponse."""
+    return ask_chatbot_with_context(query, chatbot)["answer"]

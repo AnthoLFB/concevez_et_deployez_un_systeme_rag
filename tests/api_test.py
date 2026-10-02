@@ -1,70 +1,150 @@
-import requests
-import time
-import sys
+"""
+Tests fonctionnels de l'API Puls-Events RAG.
+
+Ces tests utilisent `TestClient` de FastAPI. Ils vérifient :
+- GET /
+- POST /ask (question normale, question vide)
+- POST /rebuild (mocké, pour éviter d'appeler OpenAgenda/Mistral)
+- POST /ask avec date relative, date explicite, requête exhaustive, autre type
+
+NB : les tests marqués `requires_live_rag` ne sont exécutés que si un index
+FAISS est présent et une clé MISTRAL_API_KEY valide est configurée. Ils
+appellent réellement Mistral et OpenAgenda.
+"""
+import os
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
+import pytest
 from fastapi.testclient import TestClient
+
 from src.api import app
 
-client = TestClient(app)
 
-def test_api():
-    print("--- Test de l'API Puls-Events RAG (TestClient) ---")
-    
-    # Test de la racine
+FAISS_PATH = os.getenv("FAISS_INDEX_PATH", "data/faiss_index")
+HAS_INDEX = (Path(FAISS_PATH) / "index.faiss").is_file()
+HAS_API_KEY = bool(os.getenv("MISTRAL_API_KEY"))
+
+requires_live_rag = pytest.mark.skipif(
+    not (HAS_INDEX and HAS_API_KEY),
+    reason="Index FAISS ou MISTRAL_API_KEY absent : test réel sauté.",
+)
+
+
+# -------------------------------------------------------------------
+# Tests qui ne nécessitent ni Mistral ni index FAISS.
+# -------------------------------------------------------------------
+
+def test_root_ok():
+    """GET / doit renvoyer 200 et un message de bienvenue."""
+    client = TestClient(app)
     response = client.get("/")
-    print(f"GET / : {response.status_code} - {response.json()}")
     assert response.status_code == 200
+    assert "message" in response.json()
 
-    # Test de /ask
-    question = "Quels sont les événements culturels à Lille ?"
-    print(f"\nPose d'une question : '{question}'")
-    
-    # Note: L'initialisation du RAG se fait au startup, TestClient le gère avec 'with'
-    with TestClient(app) as client_startup:
-        response = client_startup.post(
-            "/ask",
-            json={"question": question}
-        )
-        if response.status_code == 200:
-            print(f"Réponse reçue (200 OK)")
-            print(f"Chatbot : {response.json()['answer'][:200]}...")
-            assert "answer" in response.json()
-        elif response.status_code == 503:
-            print("Système RAG non initialisé (attendu si pas d'index FAISS)")
-            assert True
-        else:
-            print(f"Erreur /ask : {response.status_code} - {response.text}")
-            assert False, f"Erreur inattendue : {response.status_code}"
 
-    # Test de /ask avec une question vide
-    print("\nTest avec une question vide...")
-    response = client.post(
-        "/ask",
-        json={"question": ""}
-    )
-    print(f"Statut attendu 400 : {response.status_code}")
+def test_ask_empty_question_rejected():
+    """POST /ask avec une question vide doit renvoyer 400."""
+    client = TestClient(app)
+    response = client.post("/ask", json={"question": "   "})
     assert response.status_code == 400
 
-    # Test de /rebuild (Mocké)
-    from unittest.mock import patch, MagicMock
-    print("\nTest de /rebuild...")
-    with patch('src.api.fetch_openagenda_events') as mock_fetch, \
-         patch('src.api.process_events') as mock_process, \
-         patch('src.api.create_chunks') as mock_chunks, \
-         patch('src.api.build_vector_store') as mock_vs, \
-         patch('src.api.save_vector_store') as mock_save, \
-         patch('src.api.get_chatbot_chain') as mock_chain:
-        
+
+def test_rebuild_mocked():
+    """POST /rebuild : vérifie la logique sans appeler OpenAgenda/Mistral."""
+    with patch("src.api.fetch_openagenda_events") as mock_fetch, \
+         patch("src.api.process_events") as mock_process, \
+         patch("src.api.create_chunks") as mock_chunks, \
+         patch("src.api.build_vector_store") as mock_vs, \
+         patch("src.api.save_vector_store") as mock_save, \
+         patch("src.api.get_chatbot_chain") as mock_chain:
+
         mock_fetch.return_value = [{"uid": 1, "title_fr": "Event"}]
-        mock_process.return_value = pd.DataFrame([{"uid": 1, "title_fr": "Event", "full_description": "Test Event Content"}])
+        mock_process.return_value = pd.DataFrame(
+            [{"uid": 1, "title_fr": "Event", "full_description": "Test"}]
+        )
         mock_chunks.return_value = [MagicMock()]
         mock_vs.return_value = MagicMock()
         mock_chain.return_value = MagicMock()
-        
+
+        client = TestClient(app)
         response = client.post("/rebuild")
-        print(f"POST /rebuild : {response.status_code} - {response.json()}")
+
         assert response.status_code == 200
-        assert "success" in response.json()["status"]
+        assert response.json()["status"] == "success"
+        mock_save.assert_called_once()
+
+
+# -------------------------------------------------------------------
+# Tests réels (nécessitent un index + une clé API).
+# -------------------------------------------------------------------
+
+@requires_live_rag
+def test_ask_simple_question():
+    """Question générique : doit obtenir une réponse non vide."""
+    with TestClient(app) as client:
+        response = client.post(
+            "/ask",
+            json={"question": "Quels événements culturels à Lille ?"},
+        )
+        assert response.status_code == 200
+        assert response.json()["answer"].strip()
+
+
+@requires_live_rag
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Quels événements à Lille ce week-end ?",
+        "Quels concerts ont eu lieu le mois dernier ?",
+        "Quels événements sont prévus la semaine prochaine ?",
+    ],
+)
+def test_ask_relative_dates(question):
+    """Vérifie que les formulations temporelles relatives sont acceptées."""
+    with TestClient(app) as client:
+        response = client.post("/ask", json={"question": question})
+        assert response.status_code == 200
+        answer = response.json()["answer"]
+        assert isinstance(answer, str) and answer.strip()
+
+
+@requires_live_rag
+def test_ask_explicit_date():
+    """Question avec une date explicite."""
+    with TestClient(app) as client:
+        response = client.post(
+            "/ask",
+            json={"question": "Donne-moi tous les événements de septembre 2026."},
+        )
+        assert response.status_code == 200
+        assert response.json()["answer"].strip()
+
+
+@requires_live_rag
+def test_ask_exhaustive_query():
+    """Requête exhaustive : doit utiliser le mode list_all et renvoyer une réponse."""
+    with TestClient(app) as client:
+        response = client.post(
+            "/ask",
+            json={"question": "Donne-moi la liste complète des événements du mois dernier."},
+        )
+        assert response.status_code == 200
+        assert response.json()["answer"].strip()
+
+
+@requires_live_rag
+def test_ask_other_event_type():
+    """Question ciblant un autre type d'événement (jeunesse)."""
+    with TestClient(app) as client:
+        response = client.post(
+            "/ask",
+            json={"question": "Quels événements pour les enfants à Lille ?"},
+        )
+        assert response.status_code == 200
+        assert response.json()["answer"].strip()
+
 
 if __name__ == "__main__":
-    test_api()
+    pytest.main([__file__, "-v"])

@@ -1,0 +1,302 @@
+[
+  {
+    "question": "Où se déroule l'événement « Webinaire formation restauration » ?",
+    "ground_truth": "L'événement « Webinaire formation restauration » se déroule à Agence LILLE GRAND SUD (59000 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Bien utiliser son compte personnel de formation » ?",
+    "ground_truth": "L'événement « Bien utiliser son compte personnel de formation » a lieu le 14 avril 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « La formation financée par la région - mode d'emploi » ?",
+    "ground_truth": "L'événement « La formation financée par la région - mode d'emploi » est décrit comme suit : Vous avez repéré une formation financée par la Région et souhaitez y accéder avec toutes les cartes en main ? Cet atelier est fait pour vous !"
+  },
+  {
+    "question": "Où se déroule l'événement « Vente en cours, travaux votés, appels de fonds à venir : qui règle la facture ? » ?",
+    "ground_truth": "L'événement « Vente en cours, travaux votés, appels de fonds à venir : qui règle la facture ? » se déroule à En ligne (lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Entrepreneuriat : Boostez votre entreprise avec Germinal (ETTI) ! » ?",
+    "ground_truth": "L'événement « Entrepreneuriat : Boostez votre entreprise avec Germinal (ETTI) ! » a lieu le 23 juillet 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Le GEIQ à domicile recrute des employé(e) à domicile en alternance » ?",
+    "ground_truth": "L'événement « Le GEIQ à domicile recrute des employé(e) à domicile en alternance » est décrit comme suit : Le Geiq à domicile HDF (Groupement d'employeurs pour l'insertion et la qualification) recrute en contrat de professionnalisation en alternance des employé(es) à domicile (AECV) pour intervenir au domi"
+  },
+  {
+    "question": "Où se déroule l'événement « Les entreprises de Lille recrutent : +30 postes disponibles ! » ?",
+    "ground_truth": "L'événement « Les entreprises de Lille recrutent : +30 postes disponibles ! » se déroule à Lille."
+  },
+  {
+    "question": "Quand a lieu l'événement « O2 recrute des assistants-es ménager-ères » ?",
+    "ground_truth": "L'événement « O2 recrute des assistants-es ménager-ères » a lieu le 16 octobre 2025."
+  },
+  {
+    "question": "De quoi parle l'événement « De Kharkiv à Lille, la culture en résistance » ?",
+    "ground_truth": "L'événement « De Kharkiv à Lille, la culture en résistance » est décrit comme suit : « De Kharkiv à Lille : la culture en résistance » l'étape lilloise de la saison Le « Voyage en Ukraine »"
+  },
+  {
+    "question": "Où se déroule l'événement « Recrutement (H/F) Plombier - Conducteur d'engins de chantier - Chauffeur Ampliroll - Manoeuvre BTP avec formation PASI - Technicien CVC - Fr » ?",
+    "ground_truth": "L'événement « Recrutement (H/F) Plombier - Conducteur d'engins de chantier - Chauffeur Ampliroll - Manoeuvre BTP avec formation PASI - Technicien CVC - Fr » se déroule à Agence LILLE PORT FLUVIAL (59800 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Village Pro : Votre tremplin vers l'emploi » ?",
+    "ground_truth": "L'événement « Village Pro : Votre tremplin vers l'emploi » a lieu le 8 décembre 2025."
+  },
+  {
+    "question": "De quoi parle l'événement « Zero Carbon Records en concert » ?",
+    "ground_truth": "L'événement « Zero Carbon Records en concert » est décrit comme suit : Avec Zero Carbon Records, les musiciens Manu Louis et Sylvain Chauveau explorent une expérience radicale : rapprocher la création et la diffusion musicale du \"zéro carbone\"."
+  },
+  {
+    "question": "Où se déroule l'événement « Ouverture OTera Lille - Recrutements Employés Libres Service et Gestionnaires de rayon » ?",
+    "ground_truth": "L'événement « Ouverture OTera Lille - Recrutements Employés Libres Service et Gestionnaires de rayon » se déroule à Agence LILLE PORT FLUVIAL (59000 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Recrutement : Les femmes en Espaces Verts et Propreté urbaine » ?",
+    "ground_truth": "L'événement « Recrutement : Les femmes en Espaces Verts et Propreté urbaine » a lieu le 1 juin 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Recrutement AZAE Postes à pourvoir H/F en Aide Ménager, Assistant de vie,Agent d'Entretien (IAE),préparateur de véhicules (IAE) » ?",
+    "ground_truth": "L'événement « Recrutement AZAE Postes à pourvoir H/F en Aide Ménager, Assistant de vie,Agent d'Entretien (IAE),préparateur de véhicules (IAE) » est décrit comme suit : France Travail de Lomme est heureux de vous inviter à la session de recrutement d'AZAE qui se déroulera le LUNDI 17/11 à 9h00 à l'agence France Travail de Lomme Cet événement offre une opportunité uni"
+  },
+  {
+    "question": "Où se déroule l'événement « Permanence Entreprises : Valorisez votre profil auprès des recruteurs » ?",
+    "ground_truth": "L'événement « Permanence Entreprises : Valorisez votre profil auprès des recruteurs » se déroule à Lille - Agence LOMME (59160 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Recrutement SHIVA - Employé de maison H/F - CDI » ?",
+    "ground_truth": "L'événement « Recrutement SHIVA - Employé de maison H/F - CDI » a lieu le 27 mai 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Recrutement d' Aide Ménager(e) à Domicile avec Joker Atoudomicile » ?",
+    "ground_truth": "L'événement « Recrutement d' Aide Ménager(e) à Domicile avec Joker Atoudomicile » est décrit comme suit : Vous souhaitez vous orienter vers l'aide à domicile ?"
+  },
+  {
+    "question": "Où se déroule l'événement « Trajet vers la VAE » ?",
+    "ground_truth": "L'événement « Trajet vers la VAE » se déroule à Agence LILLE PORT FLUVIAL (59800 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Créer une entreprise, pourquoi pas vous ? » ?",
+    "ground_truth": "L'événement « Créer une entreprise, pourquoi pas vous ? » a lieu le 11 septembre 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Comment éviter les hausses de vos contrats de charges courantes » ?",
+    "ground_truth": "L'événement « Comment éviter les hausses de vos contrats de charges courantes » est décrit comme suit : Webinaire"
+  },
+  {
+    "question": "Où se déroule l'événement « Réaliser des travaux dans son appartement en copropriété » ?",
+    "ground_truth": "L'événement « Réaliser des travaux dans son appartement en copropriété » se déroule à En ligne (lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « L’École de photographie de Kharkiv s’expose dans les gares lilloises » ?",
+    "ground_truth": "L'événement « L’École de photographie de Kharkiv s’expose dans les gares lilloises » a lieu du 28 janvier 2026 au 15 mars 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Employé(e) de maison avec SHIVA » ?",
+    "ground_truth": "L'événement « Employé(e) de maison avec SHIVA » est décrit comme suit : Employé(e) de maison - Shiva Lille Nationale Vos missions En tant qu'employé(e) de maison, vous intervenez au domicile de particuliers pour assurer l'entretien courant."
+  },
+  {
+    "question": "Où se déroule l'événement « Forum Multi secteurs Emploi/Formation ELAN » ?",
+    "ground_truth": "L'événement « Forum Multi secteurs Emploi/Formation ELAN » se déroule à Agence LILLE GRAND SUD (59000 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Recrutement SOS FAMILY - Assistant de vie (H/F) à Tourcoing » ?",
+    "ground_truth": "L'événement « Recrutement SOS FAMILY - Assistant de vie (H/F) à Tourcoing » a lieu le 19 mai 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Réunion d'information sur l' Art d' Accéder à l' Emploi de Vaucanson » ?",
+    "ground_truth": "L'événement « Réunion d'information sur l' Art d' Accéder à l' Emploi de Vaucanson » est décrit comme suit : Nous avons le plaisir de vous inviter à une réunion d'information pour découvrir le dispositif innovant \"L'Art d'Accéder à l'Emploi\", en collaboration avec le Collectif Renart (association d'artistes"
+  },
+  {
+    "question": "Où se déroule l'événement « Comprendre ma régularisation de charges et les annexes comptables » ?",
+    "ground_truth": "L'événement « Comprendre ma régularisation de charges et les annexes comptables » se déroule à En ligne (lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Recrutement SOS FAMILY - Garde de 2 enfants à Houplines » ?",
+    "ground_truth": "L'événement « Recrutement SOS FAMILY - Garde de 2 enfants à Houplines » a lieu le 19 mai 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Un dimanche, un quartier : le secteur Molinel-gare » ?",
+    "ground_truth": "L'événement « Un dimanche, un quartier : le secteur Molinel-gare » est décrit comme suit : Levez les yeux sur un secteur bien connu des Lilllois dont on ne devine pas la richesse dans un quotidien pressé et qui regorge pourtant d'immeubles et de maisons Art déco."
+  },
+  {
+    "question": "Où se déroule l'événement « Atténuation et adaptation au changement climatique pour les copropriétés » ?",
+    "ground_truth": "L'événement « Atténuation et adaptation au changement climatique pour les copropriétés » se déroule à En ligne (lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Job dating télévente CDI TEMPS PARTIEL » ?",
+    "ground_truth": "L'événement « Job dating télévente CDI TEMPS PARTIEL » a lieu le 6 mai 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « RIC TREMPLIN CADRES » ?",
+    "ground_truth": "L'événement « RIC TREMPLIN CADRES » est décrit comme suit : Venez découvrir l'association TREMPLIN CADRES HDF."
+  },
+  {
+    "question": "Où se déroule l'événement « Trouver son Alternance en commerce - porte ouverte à l'école PNBS » ?",
+    "ground_truth": "L'événement « Trouver son Alternance en commerce - porte ouverte à l'école PNBS » se déroule à Agence LILLE GRAND SUD (59000 Lille)."
+  },
+  {
+    "question": "De quoi parle l'événement « Formation Conducteur / conductrice de bus ILEVIA-SUPPLAY » ?",
+    "ground_truth": "L'événement « Formation Conducteur / conductrice de bus ILEVIA-SUPPLAY » est décrit comme suit : Nous vous proposons un Titre professionnel conducteur / conductrice de bus de 3 mois financé. Concernant le poste à pourvoir par la suite : 18 mois d'interim chez ILEVIA."
+  },
+  {
+    "question": "Où se déroule l'événement « Recrutement d' assistant(e) ménager(e) à domicile avec Joker avec formation préalable /poei » ?",
+    "ground_truth": "L'événement « Recrutement d' assistant(e) ménager(e) à domicile avec Joker avec formation préalable /poei » se déroule à Agence LILLE VAUCANSON (59800 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Information accès aux droits Spécifique Global LGS » ?",
+    "ground_truth": "L'événement « Information accès aux droits Spécifique Global LGS » a lieu le 19 mai 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Devenez Garde d'Enfant avec Kangourou Kids ! » ?",
+    "ground_truth": "L'événement « Devenez Garde d'Enfant avec Kangourou Kids ! » est décrit comme suit : Plongez dans l'univers passionnant de la petite enfance avec notre événement de recrutement dédié !"
+  },
+  {
+    "question": "Où se déroule l'événement « Webinaire | Présentation des programmes d'incubation et d'accélération » ?",
+    "ground_truth": "L'événement « Webinaire | Présentation des programmes d'incubation et d'accélération » se déroule à En ligne (lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Forum Métiers de l'Hôpital » ?",
+    "ground_truth": "L'événement « Forum Métiers de l'Hôpital » a lieu le 30 septembre 2025."
+  },
+  {
+    "question": "De quoi parle l'événement « Balade Nature - Notre région en hiver / Citadelle » ?",
+    "ground_truth": "L'événement « Balade Nature - Notre région en hiver / Citadelle » est décrit comme suit : Une occasion d’apprendre à reconnaître les êtres vivants qui vous entourent accompagné de Vincent Gavériaux, illustrateur et photographe naturaliste."
+  },
+  {
+    "question": "Où se déroule l'événement « Réunion Information et recrutement formation Assistant De Vie aux Familles ORGALY » ?",
+    "ground_truth": "L'événement « Réunion Information et recrutement formation Assistant De Vie aux Familles ORGALY » se déroule à Lille - CONSEIL DEPARTEMENTAL 59 (59800 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « La formation financée par la région - mode d'emploi » ?",
+    "ground_truth": "L'événement « La formation financée par la région - mode d'emploi » a lieu le 5 mai 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Un syndic / Un copropriétaire : Retour d'expérience sur la rénovation globale d'une copropriété » ?",
+    "ground_truth": "L'événement « Un syndic / Un copropriétaire : Retour d'expérience sur la rénovation globale d'une copropriété » est décrit comme suit : Webinaire"
+  },
+  {
+    "question": "Où se déroule l'événement « Réunion d'information collective de présentation du dispositif IOD » ?",
+    "ground_truth": "L'événement « Réunion d'information collective de présentation du dispositif IOD » se déroule à Agence LILLE GRAND SUD (59000 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Réunion d'information - Tout savoir sur l'alternance » ?",
+    "ground_truth": "L'événement « Réunion d'information - Tout savoir sur l'alternance » a lieu le 17 septembre 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Recrutement valets / femmes de chambre (CDI) » ?",
+    "ground_truth": "L'événement « Recrutement valets / femmes de chambre (CDI) » est décrit comme suit : Vous avez une expérience dans l'entretien de chambres ou de bureaux ? Montempô recherche actuellement un(e) Valet / Femme de chambre."
+  },
+  {
+    "question": "Où se déroule l'événement « Semaine de l'éducation populaire 2026 » ?",
+    "ground_truth": "L'événement « Semaine de l'éducation populaire 2026 » se déroule à Ville de Lille (Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Semaine de l'industrie . Recrutement avec Adaptel » ?",
+    "ground_truth": "L'événement « Semaine de l'industrie . Recrutement avec Adaptel » a lieu le 25 novembre 2025."
+  },
+  {
+    "question": "De quoi parle l'événement « Lundis de l'intérim spécial BTP » ?",
+    "ground_truth": "L'événement « Lundis de l'intérim spécial BTP » est décrit comme suit : Venez rencontrer les agences intérimaires spécialisées dans le BTP et découvrez leurs opportunités d'emploi !"
+  },
+  {
+    "question": "Où se déroule l'événement « Job Dating Ingénierie - Venez rencontrer les entreprises qui recrutent ! » ?",
+    "ground_truth": "L'événement « Job Dating Ingénierie - Venez rencontrer les entreprises qui recrutent ! » se déroule à Lille - Agence LA MADELEINE (59800 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Copropriété : ce qui change aujourd'hui, ce qui se prépare pour demain » ?",
+    "ground_truth": "L'événement « Copropriété : ce qui change aujourd'hui, ce qui se prépare pour demain » a lieu le 17 décembre 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Job Dating Ordre des Experts Comptables » ?",
+    "ground_truth": "L'événement « Job Dating Ordre des Experts Comptables » est décrit comme suit : Ne manquez pas le Job Dating organisé par l'OPCO Atlas et France Travail le 9 juin 2026, de 9h à 12h à l'ordre des Experts Comptables Une dizaine d'entreprises seront présentes pour vous rencontrer t"
+  },
+  {
+    "question": "Où se déroule l'événement « Lille Piano(s) Festival » ?",
+    "ground_truth": "L'événement « Lille Piano(s) Festival » se déroule à Lille."
+  },
+  {
+    "question": "De quoi parle l'événement « atelier SENIOR 360 » ?",
+    "ground_truth": "L'événement « atelier SENIOR 360 » est décrit comme suit : Et si on changeait de regard sur l'âge ?"
+  },
+  {
+    "question": "Où se déroule l'événement « Le rallye vers l'emploi » ?",
+    "ground_truth": "L'événement « Le rallye vers l'emploi » se déroule à Agence LILLE VAUCANSON (59800 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Résidentialisation des copropriétés » ?",
+    "ground_truth": "L'événement « Résidentialisation des copropriétés » a lieu le 10 novembre 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « E2C Ecole de la deuxième chance Grand Lille réunion \"info campus\" » ?",
+    "ground_truth": "L'événement « E2C Ecole de la deuxième chance Grand Lille réunion \"info campus\" » est décrit comme suit : Réunion d'information \"info campus\" tous les mardis après-midi à 14H à l'E2C Grand Lille"
+  },
+  {
+    "question": "Où se déroule l'événement « Marchez, pédalez c’est gagner pour votre santé ! » ?",
+    "ground_truth": "L'événement « Marchez, pédalez c’est gagner pour votre santé ! » se déroule à Hopital Claude Huriez (lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Vivre en copropriété à l'ère du numérique : opportunité ou source de contentieux ? » ?",
+    "ground_truth": "L'événement « Vivre en copropriété à l'ère du numérique : opportunité ou source de contentieux ? » a lieu le 7 décembre 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Atelier Mashup » ?",
+    "ground_truth": "L'événement « Atelier Mashup » est décrit comme suit : Créez un petit film à partir d'archives audiovisuelles sur le thème de la ville et du cinéma grâce à un outil de montage interactif."
+  },
+  {
+    "question": "Où se déroule l'événement « Atelier Senior 360 Agence Lille Port Fluvial » ?",
+    "ground_truth": "L'événement « Atelier Senior 360 Agence Lille Port Fluvial » se déroule à Agence LILLE PORT FLUVIAL (59000 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Forum des métiers de la sécurité » ?",
+    "ground_truth": "L'événement « Forum des métiers de la sécurité » a lieu le 28 avril 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Énergies renouvelables dans les copropriétés : apports et points de vigilance » ?",
+    "ground_truth": "L'événement « Énergies renouvelables dans les copropriétés : apports et points de vigilance » est décrit comme suit : Webinaire"
+  },
+  {
+    "question": "Où se déroule l'événement « SEANCE RATTRAPAGE PRESENTATION ART D ACCEDER A L EMPLOI LILLE 3000 » ?",
+    "ground_truth": "L'événement « SEANCE RATTRAPAGE PRESENTATION ART D ACCEDER A L EMPLOI LILLE 3000 » se déroule à Agence LILLE GRAND SUD (59000 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « 5 Minutes pour Convaincre ! Atelier de préparation aux entretiens dans le cadre du Job dating Sénior TOUR du 08/04/2026 » ?",
+    "ground_truth": "L'événement « 5 Minutes pour Convaincre ! Atelier de préparation aux entretiens dans le cadre du Job dating Sénior TOUR du 08/04/2026 » a lieu le 1 avril 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Recrutement (H/F) Plombiers qualifiés - Électriciens qualifiés - Bardeurs - Étancheurs - Couvreurs - Chauffeurs benne - ripeurs / SUPPLAY BT » ?",
+    "ground_truth": "L'événement « Recrutement (H/F) Plombiers qualifiés - Électriciens qualifiés - Bardeurs - Étancheurs - Couvreurs - Chauffeurs benne - ripeurs / SUPPLAY BT » est décrit comme suit : SUPPLAY BTP recherche : - Plombiers qualifiés (N3P1 - N3P2) H/F - Électriciens qualifiés (N3P1 - N3P2) H/F - Bardeurs H/F - Étancheurs H/F - Couvreurs H/F - Chauffeurs benne à ordures ménagères H/F -"
+  },
+  {
+    "question": "Où se déroule l'événement « Réalisation d’un Projet de Plan Pluriannuel de Travaux en copropriété » ?",
+    "ground_truth": "L'événement « Réalisation d’un Projet de Plan Pluriannuel de Travaux en copropriété » se déroule à En ligne (lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Les charges locatives et leur régularisation » ?",
+    "ground_truth": "L'événement « Les charges locatives et leur régularisation » a lieu le 20 octobre 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Découverte des formations transport et logistique dans le cadre de la semaine RSA » ?",
+    "ground_truth": "L'événement « Découverte des formations transport et logistique dans le cadre de la semaine RSA » est décrit comme suit : Transport & Logistique : Boostez votre carrière grâce aux formations qui recrutent !"
+  },
+  {
+    "question": "Où se déroule l'événement « Mes services à la carte » ?",
+    "ground_truth": "L'événement « Mes services à la carte » se déroule à Agence LILLE GRAND SUD (59000 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Réunion d'information collective - formation plombier chauffagiste » ?",
+    "ground_truth": "L'événement « Réunion d'information collective - formation plombier chauffagiste » a lieu le 7 mai 2026."
+  },
+  {
+    "question": "De quoi parle l'événement « Le rallye vers l'emploi transport logistique et commerce » ?",
+    "ground_truth": "L'événement « Le rallye vers l'emploi transport logistique et commerce » est décrit comme suit : Vous êtes intéressés par les secteurs du transport, de la logistique et du commerce Votre agence France Travail vous ouvre ses portes !"
+  },
+  {
+    "question": "Où se déroule l'événement « IAE - Visite Immersive de la structure Lulu dans ma rue » ?",
+    "ground_truth": "L'événement « IAE - Visite Immersive de la structure Lulu dans ma rue » se déroule à Agence LILLE PORT FLUVIAL (59000 Lille)."
+  },
+  {
+    "question": "Quand a lieu l'événement « Festival International du court métrage » ?",
+    "ground_truth": "L'événement « Festival International du court métrage » a lieu du 16 septembre 2026 au 27 septembre 2026."
+  }
+]

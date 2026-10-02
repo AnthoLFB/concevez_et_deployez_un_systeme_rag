@@ -11,7 +11,7 @@ Ce projet est un POC (Proof of Concept) d'un chatbot intelligent capable de rép
 
 ## Prérequis
 
-- Python >= 3.13
+- Python >= 3.12, < 3.14 (contrainte définie dans `pyproject.toml`).
 - [uv](https://github.com/astral-sh/uv) installé sur votre machine.
 - Une clé API Mistral AI valide.
 
@@ -35,6 +35,8 @@ Le projet suit un pipeline de données en plusieurs étapes :
    ```bash
    uv sync
    ```
+   `uv sync` installe les versions **exactes** verrouillées dans `uv.lock`,
+   garantissant un environnement reproductible sur n'importe quelle machine.
 
 ## Configuration
 
@@ -43,7 +45,8 @@ Le projet utilise `python-dotenv` pour gérer les variables d'environnement. Cr�
 ```env
 # Clé API Mistral
 MISTRAL_API_KEY=votre_cle_api_ici
-MISTRAL_MODEL=mistral-tiny
+# Modèle utilisé pour la génération de réponses (défaut : mistral-small-latest).
+MISTRAL_MODEL=mistral-small-latest
 
 # Paramètres de filtrage
 CITY=Lille
@@ -66,7 +69,8 @@ L'API sera accessible sur `http://127.0.0.1:8000`. La documentation est disponib
 
 Points de terminaison principaux :
 - `POST /ask` : Pose une question au chatbot.
-- `POST /rebuild` : Déclenche manuellement la récupération des données et la reconstruction de l'index FAISS.
+- `POST /rebuild` : Déclenche en arrière-plan la récupération des données et la reconstruction de l'index FAISS. Répond immédiatement en `202 Accepted`.
+- `GET /rebuild/status` : Retourne l'état de la dernière reconstruction (`idle`, `running`, `success`, `warning`, `error`).
 - `POST /evaluate` : Lance une évaluation Ragas via l'API.
 
 ### Évaluer la qualité du RAG (Ragas)
@@ -81,6 +85,31 @@ L'évaluation calcule plusieurs métriques :
 - **Context Precision** : Précision du contexte récupéré.
 
 Les résultats sont sauvegardés dans `rag_evaluation_results.csv`.
+
+#### Jeu de vérités de terrain (ground truth)
+
+Le script d'évaluation s'appuie sur un jeu de questions / `ground_truth`
+situé par défaut dans `tests/ground_truth.json` (format : liste d'objets
+`{"question": ..., "ground_truth": ...}`).
+
+Ce fichier est généré automatiquement à partir des événements réellement
+indexés (`data/processed_events.pkl`), de sorte que les réponses attendues
+sont factuellement vérifiables :
+
+```bash
+uv run python scripts/generate_ground_truth.py
+```
+
+Le script produit ~75 questions variées (lieu, date, description) à partir
+d'un tirage reproductible (`RANDOM_SEED = 42`).
+
+Pour utiliser un autre fichier :
+
+```bash
+# PowerShell
+$env:RAG_EVAL_DATASET = "chemin\vers\mon_dataset.json"
+uv run python evaluate_rag.py
+```
 
 ### Lancer le chatbot (Pipeline & Interface CLI)
 Pour lancer le chatbot (indexation automatique au premier lancement, puis mode interactif) :
@@ -104,17 +133,36 @@ uv run pytest
 ## Structure du Projet
 
 - `src/` :
+    - `__init__.py` : Chargement centralisé des variables d'environnement (`.env`).
     - `api.py` : API REST (FastAPI) exposant le système RAG.
     - `chatbot.py` : Logique de la chaîne RAG et interaction avec Mistral AI via LangChain.
     - `data_ingestion.py` : Récupération et nettoyage des données OpenAgenda.
     - `vector_store.py` : Gestion du chunking, de la vectorisation Mistral et de l'index FAISS.
-    - `data_processing.py` : Fonctions utilitaires pour les embeddings (legacy).
+    - `evaluation.py` : Pipeline d'évaluation Ragas (utilisé par `/evaluate` et `evaluate_rag.py`).
 - `tests/` :
     - `api_test.py` : Tests fonctionnels de l'API.
     - `test_chatbot.py` : Tests unitaires de la chaîne RAG.
-    - `test_data_processing.py` : Tests des utilitaires de traitement de données.
+    - `test_data_ingestion.py` : Tests du nettoyage et de l'ingestion.
+    - `test_vector_store.py` : Tests du chunking et de l'indexation FAISS.
+    - `test_environment.py` : Vérifie que les imports critiques (FAISS, LangChain, Mistral) sont disponibles.
 - `main.py` : Point d'entrée principal pour le mode CLI.
 - `evaluate_rag.py` : Script d'évaluation des performances avec Ragas.
 - `verify_search.py` : Script utilitaire pour tester la recherche dans l'index.
 - `data/` : Dossier contenant l'index FAISS (géré automatiquement).
 - `pyproject.toml` : Configuration et dépendances.
+
+### À propos des imports LangChain/Mistral
+
+Le brief pédagogique mentionne les imports historiques :
+```python
+import faiss
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+from mistral import MistralClient
+```
+Ces chemins ont été **dépréciés** par LangChain 0.3 et par le SDK Mistral.
+Le projet utilise les équivalents modernes maintenus :
+- `from langchain_community.vectorstores import FAISS`
+- `from langchain_mistralai import MistralAIEmbeddings, ChatMistralAI`
+
+Un test (`tests/test_environment.py`) valide que ces imports fonctionnent.

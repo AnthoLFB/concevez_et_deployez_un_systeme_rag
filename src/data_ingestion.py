@@ -6,9 +6,6 @@ from datetime import date, datetime
 
 import pandas as pd
 import requests
-from dotenv import load_dotenv
-
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +38,7 @@ CONTENT_COLUMNS = [
 ]
 
 
-def one_year_before_or_after(value: date, years: int) -> date:
+def shift_years(value: date, years: int) -> date:
     """Ajoute/soustrait un nombre entier d'années sans dépendance supplémentaire."""
     try:
         return value.replace(year=value.year + years)
@@ -87,9 +84,10 @@ def clean_text(value) -> str:
     text = re.sub(r"\n\s*\n+", "\n", text)
 
     # Si le texte est entièrement en majuscules (fréquent sur certains titres),
-    # on le normalise pour ne pas perturber les embeddings.
+    # on applique une casse « titre » plus respectueuse des noms propres
+    # que .capitalize() qui écrase tout en minuscules sauf la 1re lettre.
     if text.isupper() and len(text) > 10:
-        text = text.capitalize()
+        text = text.title()
 
     return text.strip()
 
@@ -154,8 +152,8 @@ def fetch_openagenda_events() -> list[dict]:
         )
 
     today = date.today()
-    start_date = one_year_before_or_after(today, -1)
-    end_date = one_year_before_or_after(today, 1)
+    start_date = shift_years(today, -1)
+    end_date = shift_years(today, 1)
 
     # On prend les événements qui chevauchent la fenêtre :
     # fin >= début de fenêtre ET début <= fin de fenêtre.
@@ -333,10 +331,12 @@ def process_events(events: list[dict]) -> pd.DataFrame:
     stats["empty_content_removed"] = int((~has_content).sum())
     df = df.loc[has_content].copy()
 
-    # 4. Suppression des événements de "bruit" (tests, annulations).
-    noise_keywords = ["test ", "test_", "lorem ipsum", "à supprimer", "annulé", "reporté"]
-    is_noise = df["title_fr"].str.lower().apply(
-        lambda x: any(kw in x for kw in noise_keywords) or x.strip() == "test"
+    # 4. Suppression des événements de "bruit" (tests, placeholders).
+    # On évite les mots comme "annulé" / "reporté" en substring car ils peuvent
+    # apparaître légitimement dans un titre (ex: "Festival annulé l'an dernier").
+    noise_prefixes = ("test ", "test_", "[test]", "à supprimer", "lorem ipsum")
+    is_noise = df["title_fr"].str.lower().str.strip().apply(
+        lambda x: x == "test" or x.startswith(noise_prefixes)
     )
     stats["noise_events_removed"] = int(is_noise.sum())
     df = df.loc[~is_noise].copy()
@@ -350,7 +350,7 @@ def process_events(events: list[dict]) -> pd.DataFrame:
             try:
                 dt = datetime.fromisoformat(row["firstdate_begin"].replace("Z", "+00:00"))
                 sections.append(f"ÉVÉNEMENT PRÉVU EN {dt.year}")
-            except:
+            except (ValueError, TypeError):
                 pass
 
         if row["title_fr"]:
