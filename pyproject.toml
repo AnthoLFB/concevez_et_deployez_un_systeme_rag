@@ -28,3 +28,8 @@ testpaths = ["tests"]
 filterwarnings = [
     "ignore::starlette.exceptions.StarletteDeprecationWarning",
 ]
+
+[dependency-groups]
+dev = [
+    "python-pptx>=1.0.2",
+]

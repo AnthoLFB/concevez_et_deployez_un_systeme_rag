@@ -47,6 +47,10 @@ Le projet utilise `python-dotenv` pour gérer les variables d'environnement. Cr�
 MISTRAL_API_KEY=votre_cle_api_ici
 # Modèle utilisé pour la génération de réponses (défaut : mistral-small-latest).
 MISTRAL_MODEL=mistral-small-latest
+# Modèle d'embeddings Mistral (défaut : mistral-embed).
+MISTRAL_EMBEDDING_MODEL=mistral-embed
+# Modèle utilisé par Ragas pour l'évaluation (défaut : mistral-large-latest).
+MISTRAL_EVAL_MODEL=mistral-large-latest
 
 # Paramètres de filtrage
 CITY=Lille
@@ -56,6 +60,8 @@ HISTORY_YEARS=1
 FAISS_INDEX_PATH=data/faiss_index
 CHUNK_SIZE=1000
 CHUNK_OVERLAP=100
+RETRIEVER_K=5
+MAX_CONTEXT_EVENTS=10
 ```
 
 ## Utilisation
@@ -86,10 +92,16 @@ L'évaluation calcule plusieurs métriques :
 
 Les résultats sont sauvegardés dans `rag_evaluation_results.csv`.
 
+> Note : une sous-classe interne `_TokenUsageSafeChatMistralAI`
+> (dans `src/evaluation.py`) neutralise le `llm_output.token_usage` renvoyé
+> par `langchain-mistralai`, qui provoquait sinon une erreur
+> `TypeError: unsupported operand type(s) for +=: 'dict' and 'dict'` dans
+> Ragas et des scores `answer_relevancy` à `null`.
+
 #### Jeu de vérités de terrain (ground truth)
 
 Le script d'évaluation s'appuie sur un jeu de questions / `ground_truth`
-situé par défaut dans `tests/ground_truth.json` (format : liste d'objets
+situé par défaut dans `docs/ground_truth.json` (format : liste d'objets
 `{"question": ..., "ground_truth": ...}`).
 
 Ce fichier est généré automatiquement à partir des événements réellement

@@ -8,17 +8,46 @@ from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from ragas import evaluate
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
-from ragas.metrics.collections import (
-    AnswerRelevancy,
-    ContextPrecision,
-    ContextRecall,
-    Faithfulness,
+from ragas.metrics import (
+    answer_relevancy,
+    context_precision,
+    context_recall,
+    faithfulness,
 )
 
 from src.chatbot import ask_chatbot_with_context
 
 
 logger = logging.getLogger(__name__)
+
+
+class _TokenUsageSafeChatMistralAI(ChatMistralAI):
+    """
+    Sous-classe de ChatMistralAI corrigeant un bug d'incompatibilité avec Ragas.
+
+    `langchain-mistralai` renvoie un `llm_output` contenant un `token_usage`
+    sous forme de dict imbriqué. Ragas tente ensuite d'accumuler ces valeurs
+    via `+=`, ce qui déclenche :
+        TypeError: unsupported operand type(s) for +=: 'dict' and 'dict'
+    et provoque notamment des scores `answer_relevancy` à `None`.
+
+    On neutralise `llm_output` pour éviter cette agrégation défectueuse.
+    """
+
+    def _combine_llm_outputs(self, llm_outputs):  # type: ignore[override]
+        return {}
+
+    def _generate(self, *args, **kwargs):  # type: ignore[override]
+        result = super()._generate(*args, **kwargs)
+        if getattr(result, "llm_output", None):
+            result.llm_output = {}
+        return result
+
+    async def _agenerate(self, *args, **kwargs):  # type: ignore[override]
+        result = await super()._agenerate(*args, **kwargs)
+        if getattr(result, "llm_output", None):
+            result.llm_output = {}
+        return result
 
 
 def _generate_rag_results(rag_chain, test_data):
@@ -148,7 +177,7 @@ def run_rag_evaluation(
 
     # Ragas fournit des adaptateurs pour utiliser un LLM LangChain.
     evaluator_llm = LangchainLLMWrapper(
-        ChatMistralAI(
+        _TokenUsageSafeChatMistralAI(
             mistral_api_key=os.getenv("MISTRAL_API_KEY"),
             model=evaluation_model,
             temperature=0.0,
@@ -166,13 +195,10 @@ def run_rag_evaluation(
     )
 
     metrics = [
-        Faithfulness(llm=evaluator_llm),
-        AnswerRelevancy(
-            llm=evaluator_llm,
-            embeddings=evaluator_embeddings,
-        ),
-        ContextRecall(llm=evaluator_llm),
-        ContextPrecision(llm=evaluator_llm),
+        faithfulness,
+        answer_relevancy,
+        context_recall,
+        context_precision,
     ]
 
     # allow_nest_asyncio=False évite que Ragas modifie la boucle
@@ -180,6 +206,8 @@ def run_rag_evaluation(
     result = evaluate(
         dataset=dataset,
         metrics=metrics,
+        llm=evaluator_llm,
+        embeddings=evaluator_embeddings,
         allow_nest_asyncio=False,
     )
 
